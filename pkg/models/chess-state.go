@@ -4,9 +4,7 @@ import (
 	"fmt"
 )
 
-// --------------------------------------------------
-// types
-// --------------------------------------------------
+// TODO: castling logic
 
 // records various information about the state of a chess position
 // current board
@@ -22,10 +20,7 @@ type ChessState struct {
 	blackCanCastleLong  bool
 }
 
-// --------------------------------------------------
-// functions/methods
-// --------------------------------------------------
-
+// creates new game state
 func NewChessState() *ChessState {
 	return &ChessState{
 		board:               NewChessBoard(),
@@ -559,7 +554,7 @@ func (state *ChessState) enumerateMovesWhiteKing(moves []Move, i, j int) []Move 
 			moves = append(moves, move)
 		}
 	}
-	if i+1 >= 0 && j-1 >= 0 && state.board[i+1][j-1] <= 0 {
+	if i+1 <= 7 && j-1 >= 0 && state.board[i+1][j-1] <= 0 {
 		move := encodeMove(state.turn, NoSpecial, i, j, i+1, j-1)
 		if !moveAbandonsKing(state.board, move, state.turn) {
 			moves = append(moves, move)
@@ -1086,7 +1081,7 @@ func (state *ChessState) enumerateMovesBlackKing(moves []Move, i, j int) []Move 
 			moves = append(moves, move)
 		}
 	}
-	if i+1 >= 0 && j-1 >= 0 && state.board[i+1][j-1] >= 0 {
+	if i+1 <= 7 && j-1 >= 0 && state.board[i+1][j-1] >= 0 {
 		move := encodeMove(state.turn, NoSpecial, i, j, i+1, j-1)
 		if !moveAbandonsKing(state.board, move, state.turn) {
 			moves = append(moves, move)
@@ -1107,42 +1102,70 @@ func (state *ChessState) enumerateMovesBlackKing(moves []Move, i, j int) []Move 
 	return moves
 }
 
-func doMove(move Move, board ChessBoard) ChessBoard {
+// returns true if move illegally places king in check
+func moveAbandonsKing(board *ChessBoard, move Move, turn int8) bool {
+	newBoard := testMove(move, *board)
+	if turn == White {
+		return newBoard.WhiteInCheck()
+	} else {
+		return newBoard.BlackInCheck()
+	}
+}
+
+func (state *ChessState) progressStateForward(move Move) *ChessState {
+	state.previousMove = move
 	turn, special, i1, j1, i2, j2 := decodeMove(move)
 
 	// check castling	4-7 i
 	if special == CastleShort {
 		if turn == White {
-			board[4][0] = EmptySquare
-			board[5][0] = WhiteRook
-			board[6][0] = WhiteKing
-			board[7][0] = EmptySquare
+			state.board[4][0] = EmptySquare
+			state.board[5][0] = WhiteRook
+			state.board[6][0] = WhiteKing
+			state.board[7][0] = EmptySquare
+			state.whiteCanCastleShort = false
+			state.whiteCanCastleLong = false
 		} else {
-			board[4][7] = EmptySquare
-			board[5][7] = WhiteRook
-			board[6][7] = WhiteKing
-			board[7][7] = EmptySquare
+			state.board[4][7] = EmptySquare
+			state.board[5][7] = WhiteRook
+			state.board[6][7] = WhiteKing
+			state.board[7][7] = EmptySquare
+			state.blackCanCastleShort = false
+			state.blackCanCastleLong = false
 		}
-		return board
+		state.turn = int8(turn+1) % 2
+		return state
 	} else if special == CastleLong {
 		if turn == White {
-			board[0][0] = EmptySquare
-			board[1][0] = EmptySquare
-			board[2][0] = WhiteKing
-			board[3][0] = WhiteRook
-			board[4][0] = EmptySquare
+			state.board[0][0] = EmptySquare
+			state.board[1][0] = EmptySquare
+			state.board[2][0] = WhiteKing
+			state.board[3][0] = WhiteRook
+			state.board[4][0] = EmptySquare
+			state.whiteCanCastleShort = false
+			state.whiteCanCastleLong = false
 		} else {
-			board[0][7] = EmptySquare
-			board[1][7] = EmptySquare
-			board[2][7] = BlackKing
-			board[3][7] = BlackRook
-			board[4][7] = EmptySquare
+			state.board[0][7] = EmptySquare
+			state.board[1][7] = EmptySquare
+			state.board[2][7] = BlackKing
+			state.board[3][7] = BlackRook
+			state.board[4][7] = EmptySquare
+			state.blackCanCastleShort = false
+			state.blackCanCastleLong = false
 		}
-		return board
+		state.turn = int8(turn+1) % 2
+		return state
 	}
 	var movingPieceType int8 = 0
 	if special == NoSpecial || special == EnPeasant {
-		movingPieceType = board[i1][j1]
+		movingPieceType = state.board[i1][j1]
+		if movingPieceType == WhiteKing {
+			state.whiteCanCastleLong = false
+			state.whiteCanCastleShort = false
+		} else if movingPieceType == BlackKing {
+			state.blackCanCastleLong = false
+			state.blackCanCastleShort = false
+		}
 	} else if special == PromoteToQueen {
 		if turn == White {
 			movingPieceType = WhiteQueen
@@ -1169,20 +1192,25 @@ func doMove(move Move, board ChessBoard) ChessBoard {
 		}
 	}
 
-	board[i1][j1] = EmptySquare
-	board[i2][j2] = movingPieceType
-	if special == EnPeasant {
-		board[i2][j1] = EmptySquare
+	if movingPieceType == WhiteRook && i1 == 0 && j1 == 0 {
+		state.whiteCanCastleLong = false
+	} else if movingPieceType == WhiteRook && i1 == 0 && j1 == 7 {
+		state.whiteCanCastleShort = false
+	} else if movingPieceType == BlackRook && i1 == 7 && j1 == 0 {
+		state.blackCanCastleLong = false
+	} else if movingPieceType == BlackRook && i1 == 7 && j1 == 7 {
+		state.blackCanCastleShort = false
 	}
-	return board
+
+	state.board[i1][j1] = EmptySquare
+	state.board[i2][j2] = movingPieceType
+	if special == EnPeasant {
+		state.board[i2][j1] = EmptySquare
+	}
+	state.turn = int8(turn+1) % 2
+	return state
 }
 
-// returns true if move illegally places king in check
-func moveAbandonsKing(board *ChessBoard, move Move, turn int8) bool {
-	newBoard := doMove(move, *board)
-	if turn == White {
-		return newBoard.WhiteInCheck()
-	} else {
-		return newBoard.BlackInCheck()
-	}
+func (state *ChessState) progressStateBackward(move Move) {
+
 }

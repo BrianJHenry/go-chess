@@ -2,19 +2,18 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 	"time"
 
 	"github.com/BrianJHenry/go-chess/pkg/models"
 )
 
 func main() {
-	chessState := models.StartingState()
 	start := time.Now()
-	moves := chessState.EnumerateMoves()
-	duration := time.Since(start)
-	for _, val := range moves {
-		fmt.Printf("%b\n", val)
+	game := models.NewChessGame()
+	for i := 0; i < 40; i++ {
+		possibleMoves := game.CurrentState.EnumerateMoves()
+		game.ExecuteMove(possibleMoves[rand.Intn(len(possibleMoves))])
 	}
-	fmt.Printf("Number of moves found: %v\n", len(moves))
-	fmt.Printf("Execution time of enumerate moves: %v\n", duration)
+	fmt.Printf("Completed %v half moves in %v\n", 100, time.Since(start))
 }

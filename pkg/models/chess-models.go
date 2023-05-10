@@ -37,6 +37,7 @@ const (
 	PromoteToRook
 	PromoteToBishop
 	PromoteToKnight
+	EnPeasant
 )
 
 // masks
@@ -168,11 +169,128 @@ func (state *ChessState) enumerateMovesWhite() []Move {
 }
 
 func (state *ChessState) enumerateMovesWhitePawn(moves []Move, i, j int) []Move {
-	// TODO: enumerate pawn moves
-	// single/double when starting on row 1
-	// taking diagonal
-	// promotion when entering row 7
-	// en peasant
+	if j == 1 {
+		// check for single move
+		if state.board[i][j+1] == EmptySquare {
+			move := encodeMove(state.turn, NoSpecial, i, j, i, j+1)
+			if !moveAbandonsKing(&state.board, move, state.turn) {
+				moves = append(moves, move)
+			}
+			// check for double moves
+			if state.board[i][j+2] == EmptySquare {
+				doubleMove := encodeMove(state.turn, NoSpecial, i, j, i, j+2)
+				if !moveAbandonsKing(&state.board, doubleMove, state.turn) {
+					moves = append(moves, doubleMove)
+				}
+			}
+		}
+		// check for captures
+		if i-1 >= 0 && state.board[i-1][j+1] < 0 {
+			move := encodeMove(state.turn, NoSpecial, i, j, i-1, j+1)
+			if !moveAbandonsKing(&state.board, move, state.turn) {
+				moves = append(moves, move)
+			}
+		}
+		if i+1 <= 7 && state.board[i+1][j+1] < 0 {
+			move := encodeMove(state.turn, NoSpecial, i, j, i+1, j+1)
+			if !moveAbandonsKing(&state.board, move, state.turn) {
+				moves = append(moves, move)
+			}
+		}
+	} else if j == 4 {
+		// check for single push
+		if state.board[i][j+1] == EmptySquare {
+			move := encodeMove(state.turn, NoSpecial, i, j, i, j+1)
+			if !moveAbandonsKing(&state.board, move, state.turn) {
+				moves = append(moves, move)
+			}
+		}
+		// check for captures
+		if i-1 >= 0 && state.board[i-1][j+1] < 0 {
+			move := encodeMove(state.turn, NoSpecial, i, j, i-1, j+1)
+			if !moveAbandonsKing(&state.board, move, state.turn) {
+				moves = append(moves, move)
+			}
+		}
+		if i+1 <= 7 && state.board[i+1][j+1] < 0 {
+			move := encodeMove(state.turn, NoSpecial, i, j, i+1, j+1)
+			if !moveAbandonsKing(&state.board, move, state.turn) {
+				moves = append(moves, move)
+			}
+		}
+		// check for en peasant
+		prev := uint16(state.previousMove)
+		special := (prev & SpecialMask) >> 13
+		if special == 0 {
+			j1 := (prev & StartJMask) >> 4
+			i2 := (prev & EndIMask) >> 7
+			j2 := (prev & EndJMask) >> 10
+			if j1 == 6 && j2 == 4 && state.board[i2][j2] == BlackPawn {
+				if i-1 == int(i2) {
+					move := encodeMove(state.turn, EnPeasant, i, j, i-1, j+1)
+					if !moveAbandonsKing(&state.board, move, state.turn) {
+						moves = append(moves, move)
+					}
+				} else if i+1 == int(i2) {
+					move := encodeMove(state.turn, EnPeasant, i, j, i+1, j+1)
+					if !moveAbandonsKing(&state.board, move, state.turn) {
+						moves = append(moves, move)
+					}
+				}
+			}
+		}
+	} else if j == 6 {
+		// check for single push
+		if state.board[i][j+1] == EmptySquare {
+			movePromoteQueen := encodeMove(state.turn, PromoteToQueen, i, j, i, j+1)
+			movePromoteRook := encodeMove(state.turn, PromoteToRook, i, j, i, j+1)
+			movePromoteBishop := encodeMove(state.turn, PromoteToBishop, i, j, i, j+1)
+			movePromoteKnight := encodeMove(state.turn, PromoteToKnight, i, j, i, j+1)
+			if !moveAbandonsKing(&state.board, movePromoteQueen, state.turn) {
+				moves = append(moves, movePromoteQueen, movePromoteRook, movePromoteBishop, movePromoteKnight)
+			}
+		}
+		// check for captures
+		if i-1 >= 0 && state.board[i-1][j+1] < 0 {
+			movePromoteQueen := encodeMove(state.turn, PromoteToQueen, i, j, i-1, j+1)
+			movePromoteRook := encodeMove(state.turn, PromoteToRook, i, j, i-1, j+1)
+			movePromoteBishop := encodeMove(state.turn, PromoteToBishop, i, j, i-1, j+1)
+			movePromoteKnight := encodeMove(state.turn, PromoteToKnight, i, j, i-1, j+1)
+			if !moveAbandonsKing(&state.board, movePromoteQueen, state.turn) {
+				moves = append(moves, movePromoteQueen, movePromoteRook, movePromoteBishop, movePromoteKnight)
+			}
+		}
+		if i+1 <= 7 && state.board[i+1][j+1] < 0 {
+			movePromoteQueen := encodeMove(state.turn, PromoteToQueen, i, j, i+1, j+1)
+			movePromoteRook := encodeMove(state.turn, PromoteToRook, i, j, i+1, j+1)
+			movePromoteBishop := encodeMove(state.turn, PromoteToBishop, i, j, i+1, j+1)
+			movePromoteKnight := encodeMove(state.turn, PromoteToKnight, i, j, i+1, j+1)
+			if !moveAbandonsKing(&state.board, movePromoteQueen, state.turn) {
+				moves = append(moves, movePromoteQueen, movePromoteRook, movePromoteBishop, movePromoteKnight)
+			}
+		}
+	} else {
+		// check for single push
+		if state.board[i][j+1] == EmptySquare {
+			move := encodeMove(state.turn, NoSpecial, i, j, i, j+1)
+			if !moveAbandonsKing(&state.board, move, state.turn) {
+				moves = append(moves, move)
+			}
+		}
+		// check for captures
+		if i-1 >= 0 && state.board[i-1][j+1] < 0 {
+			move := encodeMove(state.turn, NoSpecial, i, j, i-1, j+1)
+			if !moveAbandonsKing(&state.board, move, state.turn) {
+				moves = append(moves, move)
+			}
+		}
+		if i+1 <= 7 && state.board[i+1][j+1] < 0 {
+			move := encodeMove(state.turn, NoSpecial, i, j, i+1, j+1)
+			if !moveAbandonsKing(&state.board, move, state.turn) {
+				moves = append(moves, move)
+			}
+		}
+	}
 	return moves
 }
 
@@ -579,11 +697,130 @@ func (state *ChessState) enumerateMovesBlack() []Move {
 }
 
 func (state *ChessState) enumerateMovesBlackPawn(moves []Move, i, j int) []Move {
-	// TODO: enumerate pawn moves
-	// single/double when starting on row 1
-	// taking diagonal
-	// promotion when entering row 7
-	// en peasant
+	if j == 2 {
+		// check for single move
+		if state.board[i][j-1] == EmptySquare {
+			move := encodeMove(state.turn, NoSpecial, i, j, i, j-1)
+			if !moveAbandonsKing(&state.board, move, state.turn) {
+				moves = append(moves, move)
+			}
+			// check for double move
+			if state.board[i][j-2] == EmptySquare {
+				doubleMove := encodeMove(state.turn, NoSpecial, i, j, i, j-2)
+				if !moveAbandonsKing(&state.board, doubleMove, state.turn) {
+					moves = append(moves, doubleMove)
+				}
+			}
+		}
+		// check for captures
+		if i-1 >= 0 && state.board[i-1][j-1] > 0 {
+			move := encodeMove(state.turn, NoSpecial, i, j, i-1, j-1)
+			if !moveAbandonsKing(&state.board, move, state.turn) {
+				moves = append(moves, move)
+			}
+		}
+		if i+1 <= 7 && state.board[i+1][j-1] > 0 {
+			move := encodeMove(state.turn, NoSpecial, i, j, i+1, j-1)
+			if !moveAbandonsKing(&state.board, move, state.turn) {
+				moves = append(moves, move)
+			}
+		}
+	} else if j == 3 {
+		// check for single push
+		if state.board[i][j-1] == EmptySquare {
+			move := encodeMove(state.turn, NoSpecial, i, j, i, j-1)
+			if !moveAbandonsKing(&state.board, move, state.turn) {
+				moves = append(moves, move)
+			}
+		}
+		// check for captures
+		if i-1 >= 0 && state.board[i-1][j-1] > 0 {
+			move := encodeMove(state.turn, NoSpecial, i, j, i-1, j-1)
+			if !moveAbandonsKing(&state.board, move, state.turn) {
+				moves = append(moves, move)
+			}
+		}
+		if i+1 <= 7 && state.board[i+1][j-1] > 0 {
+			move := encodeMove(state.turn, NoSpecial, i, j, i+1, j-1)
+			if !moveAbandonsKing(&state.board, move, state.turn) {
+				moves = append(moves, move)
+			}
+		}
+		// check for en peasant
+		prev := uint16(state.previousMove)
+		special := (prev & SpecialMask) >> 13
+		if special == 0 {
+			j1 := (prev & StartJMask) >> 4
+			i2 := (prev & EndIMask) >> 7
+			j2 := (prev & EndJMask) >> 10
+			if j1 == 1 && j2 == 3 && state.board[i2][j2] == WhitePawn {
+				if i-1 == int(i2) {
+					move := encodeMove(state.turn, EnPeasant, i, j, i-1, j-1)
+					if !moveAbandonsKing(&state.board, move, state.turn) {
+						moves = append(moves, move)
+					}
+				} else if i+1 == int(i2) {
+					move := encodeMove(state.turn, EnPeasant, i, j, i+1, j-1)
+					if !moveAbandonsKing(&state.board, move, state.turn) {
+						moves = append(moves, move)
+					}
+				}
+			}
+		}
+
+	} else if j == 1 {
+		// check for single push
+		if state.board[i][j-1] == EmptySquare {
+			movePromoteQueen := encodeMove(state.turn, PromoteToQueen, i, j, i, j-1)
+			movePromoteRook := encodeMove(state.turn, PromoteToRook, i, j, i, j-1)
+			movePromoteBishop := encodeMove(state.turn, PromoteToBishop, i, j, i, j-1)
+			movePromoteKnight := encodeMove(state.turn, PromoteToKnight, i, j, i, j-1)
+			if !moveAbandonsKing(&state.board, movePromoteQueen, state.turn) {
+				moves = append(moves, movePromoteQueen, movePromoteRook, movePromoteBishop, movePromoteKnight)
+			}
+		}
+		// check for captures
+		if i-1 >= 0 && state.board[i-1][j-1] > 0 {
+			movePromoteQueen := encodeMove(state.turn, PromoteToQueen, i, j, i-1, j-1)
+			movePromoteRook := encodeMove(state.turn, PromoteToRook, i, j, i-1, j-1)
+			movePromoteBishop := encodeMove(state.turn, PromoteToBishop, i, j, i-1, j-1)
+			movePromoteKnight := encodeMove(state.turn, PromoteToKnight, i, j, i-1, j-1)
+			if !moveAbandonsKing(&state.board, movePromoteQueen, state.turn) {
+				moves = append(moves, movePromoteQueen, movePromoteRook, movePromoteBishop, movePromoteKnight)
+			}
+		}
+		if i+1 <= 7 && state.board[i+1][j-1] > 0 {
+			movePromoteQueen := encodeMove(state.turn, PromoteToQueen, i, j, i+1, j-1)
+			movePromoteRook := encodeMove(state.turn, PromoteToRook, i, j, i+1, j-1)
+			movePromoteBishop := encodeMove(state.turn, PromoteToBishop, i, j, i+1, j-1)
+			movePromoteKnight := encodeMove(state.turn, PromoteToKnight, i, j, i+1, j-1)
+			if !moveAbandonsKing(&state.board, movePromoteQueen, state.turn) {
+				moves = append(moves, movePromoteQueen, movePromoteRook, movePromoteBishop, movePromoteKnight)
+			}
+		}
+	} else {
+		// check for single push
+		if state.board[i][j-1] == EmptySquare {
+			move := encodeMove(state.turn, NoSpecial, i, j, i, j-1)
+			if !moveAbandonsKing(&state.board, move, state.turn) {
+				moves = append(moves, move)
+			}
+		}
+		// check for captures
+		if i-1 >= 0 && state.board[i-1][j-1] > 0 {
+			move := encodeMove(state.turn, NoSpecial, i, j, i-1, j-1)
+			if !moveAbandonsKing(&state.board, move, state.turn) {
+				moves = append(moves, move)
+			}
+		}
+		if i+1 <= 7 && state.board[i+1][j-1] > 0 {
+			move := encodeMove(state.turn, NoSpecial, i, j, i+1, j-1)
+			if !moveAbandonsKing(&state.board, move, state.turn) {
+				moves = append(moves, move)
+			}
+		}
+	}
+
 	return moves
 }
 
@@ -1254,7 +1491,7 @@ func doMove(move Move, board ChessBoard) ChessBoard {
 	j2 := (EndJMask & moveInfo) >> 10
 
 	var movingPieceType int8 = 0
-	if special == NoSpecial {
+	if special == NoSpecial || special == EnPeasant {
 		movingPieceType = board[i1][j1]
 	} else if special == PromoteToQueen {
 		if turn == White {
@@ -1284,6 +1521,9 @@ func doMove(move Move, board ChessBoard) ChessBoard {
 
 	board[i1][j1] = EmptySquare
 	board[i2][j2] = movingPieceType
+	if special == EnPeasant {
+		board[i2][j1] = EmptySquare
+	}
 	return board
 }
 

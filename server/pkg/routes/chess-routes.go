@@ -1,7 +1,7 @@
 package routes
 
 import (
-	"github.com/BrianJHenry/go-chess/pkg/controllers"
+	"github.com/BrianJHenry/go-chess/server/pkg/controllers"
 	"github.com/gin-gonic/gin"
 )
 

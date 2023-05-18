@@ -1,0 +1,12 @@
+.chess-square {
+    width: 75px;
+    height: 75px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.chess-square > * {
+    height: 60px;
+    width: 60px;
+}

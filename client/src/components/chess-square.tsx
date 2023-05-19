@@ -1,4 +1,4 @@
-import "./ChessSquare.css"
+import "./chess-square.css"
 import { ReactNode } from "react";
 
 type ChessSquareProps = {

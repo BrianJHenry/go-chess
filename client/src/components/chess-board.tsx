@@ -1,19 +1,19 @@
-import "./ChessBoard.css";
-import ChessSquare from "../ChessSquare/ChessSquare";
+import "./chess-board.css";
+import ChessSquare from "./chess-square";
 import { useState } from "react";
 
-import {ReactComponent as BlackKing} from "../../assets/black-pieces/BlackKing.svg"
-import {ReactComponent as BlackQueen} from "../../assets/black-pieces/BlackQueen.svg"
-import {ReactComponent as BlackRook} from "../../assets/black-pieces/BlackRook.svg"
-import {ReactComponent as BlackBishop} from "../../assets/black-pieces/BlackBishop.svg"
-import {ReactComponent as BlackKnight} from "../../assets/black-pieces/BlackKnight.svg"
-import {ReactComponent as BlackPawn} from "../../assets/black-pieces/BlackPawn.svg"
-import {ReactComponent as WhiteKing} from "../../assets/white-pieces/WhiteKing.svg"
-import {ReactComponent as WhiteQueen} from "../../assets/white-pieces/WhiteQueen.svg"
-import {ReactComponent as WhiteRook} from "../../assets/white-pieces/WhiteRook.svg"
-import {ReactComponent as WhiteBishop} from "../../assets/white-pieces/WhiteBishop.svg"
-import {ReactComponent as WhiteKnight} from "../../assets/white-pieces/WhiteKnight.svg"
-import {ReactComponent as WhitePawn} from "../../assets/white-pieces/WhitePawn.svg"
+import {ReactComponent as BlackKing} from "../assets/black-pieces/BlackKing.svg"
+import {ReactComponent as BlackQueen} from "../assets/black-pieces/BlackQueen.svg"
+import {ReactComponent as BlackRook} from "../assets/black-pieces/BlackRook.svg"
+import {ReactComponent as BlackBishop} from "../assets/black-pieces/BlackBishop.svg"
+import {ReactComponent as BlackKnight} from "../assets/black-pieces/BlackKnight.svg"
+import {ReactComponent as BlackPawn} from "../assets/black-pieces/BlackPawn.svg"
+import {ReactComponent as WhiteKing} from "../assets/white-pieces/WhiteKing.svg"
+import {ReactComponent as WhiteQueen} from "../assets/white-pieces/WhiteQueen.svg"
+import {ReactComponent as WhiteRook} from "../assets/white-pieces/WhiteRook.svg"
+import {ReactComponent as WhiteBishop} from "../assets/white-pieces/WhiteBishop.svg"
+import {ReactComponent as WhiteKnight} from "../assets/white-pieces/WhiteKnight.svg"
+import {ReactComponent as WhitePawn} from "../assets/white-pieces/WhitePawn.svg"
 
 const ChessBoard = () => {
 

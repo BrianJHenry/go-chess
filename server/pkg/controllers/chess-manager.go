@@ -40,13 +40,15 @@ func (m *Manager) ServeWebsocket(c *websocket.Conn) {
 		msg []byte
 		err error
 	)
-	if mt, msg, err = c.ReadMessage(); err != nil {
-		log.Println("read:", err)
-	}
-	log.Printf("recv: %s", msg)
+	for {
+		if mt, msg, err = c.ReadMessage(); err != nil {
+			log.Println("read:", err)
+		}
+		log.Printf("recv: %s", msg)
 
-	if err = c.WriteMessage(mt, msg); err != nil {
-		log.Println("write:", err)
+		if err = c.WriteMessage(mt, msg); err != nil {
+			log.Println("write:", err)
+		}
 	}
 	c.Close()
 }

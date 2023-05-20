@@ -1,4 +1,4 @@
-import "./chess-board.css";
+import "../styles/chess-board.css";
 import ChessSquare from "./chess-square";
 import { useState } from "react";
 

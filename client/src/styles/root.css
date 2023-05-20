@@ -3,7 +3,7 @@
     top: 0;
     left: 0;
     bottom: 0;
-    width: 150px;
+    width: 200px;
 
     padding: 25px;
 
@@ -47,11 +47,8 @@
 }
 
 .content-view {
-    box-sizing: border-box;
     height: 100vh;
     display: flex;
-    flex-direction: column;
-    flex: 1;
 
     background-color: rgb(73, 77, 110);
     padding: 25px;

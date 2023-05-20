@@ -4,8 +4,6 @@
 
     border: 5px solid rgb(33, 34, 49);
     border-radius: 5px;
-    width: 70%;
 
-    box-sizing: border-box;
     aspect-ratio: 1;
 }

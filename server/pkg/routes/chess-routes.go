@@ -2,11 +2,19 @@ package routes
 
 import (
 	"github.com/BrianJHenry/go-chess/server/pkg/controllers"
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/websocket/v2"
 )
 
-func BuildRoutes(router *gin.Engine) {
-	router.GET("/play", controllers.GetGame)
-	router.GET("/play/:id/updateState", controllers.UpdateState)
-	router.PUT("/play/:id/playMove", controllers.PlayMove)
+func BuildRoutes(app *fiber.App) {
+
+	// non websocket routes
+
+	// websocket
+	manager := controllers.NewManager()
+
+	app.Use("/ws", manager.UseWebsocket)
+
+	app.Get("/ws/:id", websocket.New(manager.ServeWebsocket))
+
 }

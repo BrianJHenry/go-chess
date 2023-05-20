@@ -1,14 +1,16 @@
 package main
 
 import (
+	"log"
+
 	"github.com/BrianJHenry/go-chess/server/pkg/routes"
-	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
 func main() {
-	router := gin.Default()
+	app := fiber.New()
 
-	routes.BuildRoutes(router)
+	routes.BuildRoutes(app)
 
-	router.Run(":8080")
+	log.Fatal(app.Listen(":3000"))
 }

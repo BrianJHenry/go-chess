@@ -30,6 +30,7 @@ func NewChessBoard() *ChessBoard {
 	}
 }
 
+/*
 func (board *ChessBoard) printChessBoard() {
 	for i := 7; i >= 0; i-- {
 		fmt.Println("-----------------------------------------------------------------")
@@ -40,6 +41,7 @@ func (board *ChessBoard) printChessBoard() {
 	}
 	fmt.Println("-----------------------------------------------------------------")
 }
+*/
 
 func (board *ChessBoard) IsSquareAttackedByWhite(i, j int) bool {
 	// check for pawn attacks

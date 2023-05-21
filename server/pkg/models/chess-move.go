@@ -14,14 +14,14 @@ const (
 )
 
 type Location struct {
-	Row int `json:"row"`
-	Col int `json:"col"`
+	Row int
+	Col int
 }
 
 type Move struct {
-	Type      MoveType `json:"type"`
-	OldSquare Location `json:"oldSquare"`
-	NewSquare Location `json:"newSquare"`
+	Type      MoveType
+	OldSquare Location
+	NewSquare Location
 }
 
 func NewMove(moveType MoveType, oldI, oldJ, newI, newJ int) Move {

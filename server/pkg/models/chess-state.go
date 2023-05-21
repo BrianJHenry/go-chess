@@ -519,7 +519,6 @@ func (state *ChessState) enumerateMovesWhiteQueen(moves []Move, i, j int) []Move
 }
 
 func (state *ChessState) enumerateMovesWhiteKing(moves []Move, i, j int) []Move {
-	// TODO: Castling
 	if i+1 <= 7 && j+1 <= 7 && state.board[i+1][j+1] <= 0 {
 		move := NewMove(Normal, i, j, i+1, j+1)
 		if state.isLegalMove(move) {
@@ -568,6 +567,36 @@ func (state *ChessState) enumerateMovesWhiteKing(moves []Move, i, j int) []Move 
 			moves = append(moves, move)
 		}
 	}
+
+	// castling short
+	if state.whiteCanCastleShort {
+		if state.board[0][5] == EmptySquare &&
+			state.board[0][6] == EmptySquare &&
+			!state.board.IsSquareAttackedByBlack(0, 4) &&
+			!state.board.IsSquareAttackedByBlack(0, 5) {
+
+			move := NewMove(CastleShort, i, j, i, j+2)
+			if state.isLegalMove(move) {
+				moves = append(moves, move)
+			}
+		}
+	}
+
+	// castling long
+	if state.whiteCanCastleLong {
+		if state.board[0][1] == EmptySquare &&
+			state.board[0][2] == EmptySquare &&
+			state.board[0][3] == EmptySquare &&
+			state.board.IsSquareAttackedByBlack(0, 3) &&
+			state.board.IsSquareAttackedByBlack(0, 4) {
+
+			move := NewMove(CastleLong, i, j, i, j-2)
+			if state.isLegalMove(move) {
+				moves = append(moves, move)
+			}
+		}
+	}
+
 	return moves
 }
 
@@ -1091,6 +1120,36 @@ func (state *ChessState) enumerateMovesBlackKing(moves []Move, i, j int) []Move 
 			moves = append(moves, move)
 		}
 	}
+
+	// castling short
+	if state.blackCanCastleShort {
+		if state.board[7][5] == EmptySquare &&
+			state.board[7][6] == EmptySquare &&
+			!state.board.IsSquareAttackedByWhite(7, 4) &&
+			!state.board.IsSquareAttackedByWhite(7, 5) {
+
+			move := NewMove(CastleShort, i, j, i, j+2)
+			if state.isLegalMove(move) {
+				moves = append(moves, move)
+			}
+		}
+	}
+
+	// castling long
+	if state.blackCanCastleLong {
+		if state.board[7][1] == EmptySquare &&
+			state.board[7][2] == EmptySquare &&
+			state.board[7][3] == EmptySquare &&
+			state.board.IsSquareAttackedByWhite(7, 3) &&
+			state.board.IsSquareAttackedByWhite(7, 4) {
+
+			move := NewMove(CastleLong, i, j, i, j-2)
+			if state.isLegalMove(move) {
+				moves = append(moves, move)
+			}
+		}
+	}
+
 	return moves
 }
 

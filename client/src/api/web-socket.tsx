@@ -8,9 +8,11 @@ type WebSocketProps = {
 
 const WebSocket = ({ url }: WebSocketProps) => {
 
+
     const { sendMessage, readyState } = useWebSocket(url);
 
     const handleClickSendMessage = useCallback(() => sendMessage("Hello"), []);
+
 
     const connectionStatus = {
         [ReadyState.CONNECTING]: "Connecting",

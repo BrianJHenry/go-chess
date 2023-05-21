@@ -1,6 +1,10 @@
 package sockets
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/BrianJHenry/go-chess/server/pkg/models"
+)
 
 type Game struct {
 	// game info
@@ -26,16 +30,28 @@ func NewGame(numberOfPlayers int) *Game {
 
 func (game *Game) Start() {
 
-	// TODO: Setup gamestate
+	// current number of clients to check if we have enough to start our game
 	currentClientCount := 0
 
+	// create new game
+	chessGame := models.NewChessGame()
 	gameOver := false
 
 	for !gameOver {
 		select {
 		case client := <-game.Register:
 			game.Clients[currentClientCount] = client
+			currentClientCount += 1
 			fmt.Println("Number of players in lobby: ", len(game.Clients))
+			// if we have enough players start the game
+			if currentClientCount == game.NumberOfPlayers {
+				// send over board to all
+				// send whose turn to all
+				for i, c := range game.Clients {
+					fmt.Println(i, c)
+					// TODO: send board state, turn, and previous moves as json to client
+				}
+			}
 		case client := <-game.Unregister:
 			for i, c := range game.Clients {
 				if c == client {
@@ -53,10 +69,31 @@ func (game *Game) Start() {
 			}
 			gameOver = true
 		case move := <-game.RecieveMove:
+			// TODO: check that move was in possible moves
+
+			// TODO: execute move
+
+			// TODO: send back updated state to all players
+
 			for _, client := range game.Clients {
 				client.Conn.WriteMessage(move.Type, []byte(move.Body))
 			}
 		}
-		// TODO: finish up connection and game logic
+
+		// TODO: check if the previous move ended the game
+
+		// TODO: if so, set gameOver = true
+		// TODO: if so, send end game message to players
+
+		// TODO: check if the computer needs to make a move
+
+		// TODO: enumerate moves and make move for computer
+		// TODO: check if that ends game
+		// TODO: if so send endd game message to players
+
+		// TODO: if the computer doesn't need to make a move
+
+		// TODO: then enumerate moves for the color whose turn it is
+		// TODO: send possible moves to appropriate client
 	}
 }

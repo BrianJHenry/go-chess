@@ -30,7 +30,7 @@ func NewChessBoard() *ChessBoard {
 	}
 }
 
-func (board ChessBoard) printChessBoard() {
+func (board *ChessBoard) printChessBoard() {
 	for i := 7; i >= 0; i-- {
 		fmt.Println("-----------------------------------------------------------------")
 		for j := 0; j < 8; j++ {
@@ -41,119 +41,235 @@ func (board ChessBoard) printChessBoard() {
 	fmt.Println("-----------------------------------------------------------------")
 }
 
-func (board *ChessBoard) WhiteInCheck() bool {
+func (board *ChessBoard) IsSquareAttackedByWhite(i, j int) bool {
+	// check for pawn attacks
+	if i-1 >= 0 && j-1 >= 0 && board[i-1][j-1] == WhitePawn {
+		return true
+	}
+	if i-1 >= 0 && j+1 <= 7 && board[i-1][j+1] == WhitePawn {
+		return true
+	}
+	// check for knight attacks
+	if i+1 <= 7 && j+2 <= 7 && board[i+1][j+2] == WhiteKnight {
+		return true
+	}
+	if i+1 <= 7 && j-2 >= 0 && board[i+1][j-2] == WhiteKnight {
+		return true
+	}
+	if i+2 <= 7 && j+1 <= 7 && board[i+2][j+1] == WhiteKnight {
+		return true
+	}
+	if i+2 <= 7 && j-1 >= 0 && board[i+2][j-1] == WhiteKnight {
+		return true
+	}
+	if i-1 >= 0 && j+2 <= 7 && board[i-1][j+2] == WhiteKnight {
+		return true
+	}
+	if i-1 >= 0 && j-2 >= 0 && board[i-1][j-2] == WhiteKnight {
+		return true
+	}
+	if i-2 >= 0 && j+1 <= 7 && board[i-2][j+1] == WhiteKnight {
+		return true
+	}
+	if i-2 >= 0 && j-1 >= 0 && board[i-2][j-1] == WhiteKnight {
+		return true
+	}
+	// check for bishop/queen attacks
+	for x, y := i+1, j+1; x <= 7 && y <= 7; x, y = x+1, y+1 {
+		if board[x][y] == EmptySquare {
+			continue
+		} else if board[x][y] == WhiteBishop || board[x][y] == WhiteQueen {
+			return true
+		} else {
+			break
+		}
+	}
+	for x, y := i+1, j-1; x <= 7 && y >= 0; x, y = x+1, y-1 {
+		if board[x][y] == EmptySquare {
+			continue
+		} else if board[x][y] == WhiteBishop || board[x][y] == WhiteQueen {
+			return true
+		} else {
+			break
+		}
+	}
+	for x, y := i-1, j+1; x >= 0 && y <= 7; x, y = x-1, y+1 {
+		if board[x][y] == EmptySquare {
+			continue
+		} else if board[x][y] == WhiteBishop || board[x][y] == WhiteQueen {
+			return true
+		} else {
+			break
+		}
+	}
+	for x, y := i-1, j-1; x >= 0 && y >= 0; x, y = x-1, y-1 {
+		if board[x][y] == EmptySquare {
+			continue
+		} else if board[x][y] == WhiteBishop || board[x][y] == WhiteQueen {
+			return true
+		} else {
+			break
+		}
+	}
+
+	// check for rook/queen attacks
+	for x, y := i, j+1; y <= 7; y++ {
+		if board[x][y] == EmptySquare {
+			continue
+		} else if board[x][y] == WhiteRook || board[x][y] == WhiteQueen {
+			return true
+		} else {
+			break
+		}
+	}
+	for x, y := i, j-1; y >= 0; y-- {
+		if board[x][y] == EmptySquare {
+			continue
+		} else if board[x][y] == WhiteRook || board[x][y] == WhiteQueen {
+			return true
+		} else {
+			break
+		}
+	}
+	for x, y := i+1, j; x <= 7; x++ {
+		if board[x][y] == EmptySquare {
+			continue
+		} else if board[x][y] == WhiteRook || board[x][y] == WhiteQueen {
+			return true
+		} else {
+			break
+		}
+	}
+	for x, y := i-1, j; x >= 0; x-- {
+		if board[x][y] == EmptySquare {
+			continue
+		} else if board[x][y] == WhiteRook || board[x][y] == WhiteQueen {
+			return true
+		} else {
+			break
+		}
+	}
+	return false
+}
+
+func (board *ChessBoard) IsSquareAttackedByBlack(i, j int) bool {
+	// check for pawn attacks
+	if i+1 <= 7 && j-1 >= 0 && board[i+1][j-1] == BlackPawn {
+		return true
+	}
+	if i+1 <= 7 && j+1 <= 7 && board[i+1][j+1] == BlackPawn {
+		return true
+	}
+	// check for knight attacks
+	if i+1 <= 7 && j+2 <= 7 && board[i+1][j+2] == BlackKnight {
+		return true
+	}
+	if i+1 <= 7 && j-2 >= 0 && board[i+1][j-2] == BlackKnight {
+		return true
+	}
+	if i+2 <= 7 && j+1 <= 7 && board[i+2][j+1] == BlackKnight {
+		return true
+	}
+	if i+2 <= 7 && j-1 >= 0 && board[i+2][j-1] == BlackKnight {
+		return true
+	}
+	if i-1 >= 0 && j+2 <= 7 && board[i-1][j+2] == BlackKnight {
+		return true
+	}
+	if i-1 >= 0 && j-2 >= 0 && board[i-1][j-2] == BlackKnight {
+		return true
+	}
+	if i-2 >= 0 && j+1 <= 7 && board[i-2][j+1] == BlackKnight {
+		return true
+	}
+	if i-2 >= 0 && j-1 >= 0 && board[i-2][j-1] == BlackKnight {
+		return true
+	}
+	// check for bishop/queen attacks
+	for x, y := i+1, j+1; x <= 7 && y <= 7; x, y = x+1, y+1 {
+		if board[x][y] == EmptySquare {
+			continue
+		} else if board[x][y] == BlackBishop || board[x][y] == BlackQueen {
+			return true
+		} else {
+			break
+		}
+	}
+	for x, y := i+1, j-1; x <= 7 && y >= 0; x, y = x+1, y-1 {
+		if board[x][y] == EmptySquare {
+			continue
+		} else if board[x][y] == BlackBishop || board[x][y] == BlackQueen {
+			return true
+		} else {
+			break
+		}
+	}
+	for x, y := i-1, j+1; x >= 0 && y <= 7; x, y = x-1, y+1 {
+		if board[x][y] == EmptySquare {
+			continue
+		} else if board[x][y] == BlackBishop || board[x][y] == BlackQueen {
+			return true
+		} else {
+			break
+		}
+	}
+	for x, y := i-1, j-1; x >= 0 && y >= 0; x, y = x-1, y-1 {
+		if board[x][y] == EmptySquare {
+			continue
+		} else if board[x][y] == BlackBishop || board[x][y] == BlackQueen {
+			return true
+		} else {
+			break
+		}
+	}
+
+	// check for rook/queen attacks
+	for x, y := i, j+1; y <= 7; y++ {
+		if board[x][y] == EmptySquare {
+			continue
+		} else if board[x][y] == BlackRook || board[x][y] == BlackQueen {
+			return true
+		} else {
+			break
+		}
+	}
+	for x, y := i, j-1; y >= 0; y-- {
+		if board[x][y] == EmptySquare {
+			continue
+		} else if board[x][y] == BlackRook || board[x][y] == BlackQueen {
+			return true
+		} else {
+			break
+		}
+	}
+	for x, y := i+1, j; x <= 7; x++ {
+		if board[x][y] == EmptySquare {
+			continue
+		} else if board[x][y] == BlackRook || board[x][y] == BlackQueen {
+			return true
+		} else {
+			break
+		}
+	}
+	for x, y := i-1, j; x >= 0; x-- {
+		if board[x][y] == EmptySquare {
+			continue
+		} else if board[x][y] == BlackRook || board[x][y] == BlackQueen {
+			return true
+		} else {
+			break
+		}
+	}
+	return false
+}
+
+func (board *ChessBoard) IsWhiteInCheck() bool {
 	// find king
 	for j := 0; j < 8; j++ {
 		for i := 0; i < 8; i++ {
 			if board[i][j] == WhiteKing {
-				// check for pawn checks
-				if i+1 <= 7 && j-1 >= 0 && board[i+1][j-1] == BlackPawn {
-					return true
-				}
-				if i+1 <= 7 && j+1 <= 7 && board[i+1][j+1] == BlackPawn {
-					return true
-				}
-				// check for knight checks
-				if i+1 <= 7 && j+2 <= 7 && board[i+1][j+2] == BlackKnight {
-					return true
-				}
-				if i+1 <= 7 && j-2 >= 0 && board[i+1][j-2] == BlackKnight {
-					return true
-				}
-				if i+2 <= 7 && j+1 <= 7 && board[i+2][j+1] == BlackKnight {
-					return true
-				}
-				if i+2 <= 7 && j-1 >= 0 && board[i+2][j-1] == BlackKnight {
-					return true
-				}
-				if i-1 >= 0 && j+2 <= 7 && board[i-1][j+2] == BlackKnight {
-					return true
-				}
-				if i-1 >= 0 && j-2 >= 0 && board[i-1][j-2] == BlackKnight {
-					return true
-				}
-				if i-2 >= 0 && j+1 <= 7 && board[i-2][j+1] == BlackKnight {
-					return true
-				}
-				if i-2 >= 0 && j-1 >= 0 && board[i-2][j-1] == BlackKnight {
-					return true
-				}
-				// check for bishop/queen checks
-				for x, y := i+1, j+1; x <= 7 && y <= 7; x, y = x+1, y+1 {
-					if board[x][y] == EmptySquare {
-						continue
-					} else if board[x][y] == BlackBishop || board[x][y] == BlackQueen {
-						return true
-					} else {
-						break
-					}
-				}
-				for x, y := i+1, j-1; x <= 7 && y >= 0; x, y = x+1, y-1 {
-					if board[x][y] == EmptySquare {
-						continue
-					} else if board[x][y] == BlackBishop || board[x][y] == BlackQueen {
-						return true
-					} else {
-						break
-					}
-				}
-				for x, y := i-1, j+1; x >= 0 && y <= 7; x, y = x-1, y+1 {
-					if board[x][y] == EmptySquare {
-						continue
-					} else if board[x][y] == BlackBishop || board[x][y] == BlackQueen {
-						return true
-					} else {
-						break
-					}
-				}
-				for x, y := i-1, j-1; x >= 0 && y >= 0; x, y = x-1, y-1 {
-					if board[x][y] == EmptySquare {
-						continue
-					} else if board[x][y] == BlackBishop || board[x][y] == BlackQueen {
-						return true
-					} else {
-						break
-					}
-				}
-
-				// check for rook/queen checks
-				for x, y := i, j+1; y <= 7; y++ {
-					if board[x][y] == EmptySquare {
-						continue
-					} else if board[x][y] == BlackRook || board[x][y] == BlackQueen {
-						return true
-					} else {
-						break
-					}
-				}
-				for x, y := i, j-1; y >= 0; y-- {
-					if board[x][y] == EmptySquare {
-						continue
-					} else if board[x][y] == BlackRook || board[x][y] == BlackQueen {
-						return true
-					} else {
-						break
-					}
-				}
-				for x, y := i+1, j; x <= 7; x++ {
-					if board[x][y] == EmptySquare {
-						continue
-					} else if board[x][y] == BlackRook || board[x][y] == BlackQueen {
-						return true
-					} else {
-						break
-					}
-				}
-				for x, y := i-1, j; x >= 0; x-- {
-					if board[x][y] == EmptySquare {
-						continue
-					} else if board[x][y] == BlackRook || board[x][y] == BlackQueen {
-						return true
-					} else {
-						break
-					}
-				}
-				return false
+				// check if square is attacked by
+				return board.IsSquareAttackedByBlack(i, j)
 			}
 		}
 	}
@@ -161,119 +277,12 @@ func (board *ChessBoard) WhiteInCheck() bool {
 	return false
 }
 
-func (board *ChessBoard) BlackInCheck() bool {
+func (board *ChessBoard) IsBlackInCheck() bool {
 	// find king
 	for j := 7; j >= 0; j-- {
 		for i := 7; i >= 0; i-- {
 			if board[i][j] == BlackKing {
-				// check for pawn checks
-				if i-1 >= 0 && j-1 >= 0 && board[i-1][j-1] == WhitePawn {
-					return true
-				}
-				if i-1 >= 0 && j+1 <= 7 && board[i-1][j+1] == WhitePawn {
-					return true
-				}
-				// check for knight checks
-				if i+1 <= 7 && j+2 <= 7 && board[i+1][j+2] == WhiteKnight {
-					return true
-				}
-				if i+1 <= 7 && j-2 >= 0 && board[i+1][j-2] == WhiteKnight {
-					return true
-				}
-				if i+2 <= 7 && j+1 <= 7 && board[i+2][j+1] == WhiteKnight {
-					return true
-				}
-				if i+2 <= 7 && j-1 >= 0 && board[i+2][j-1] == WhiteKnight {
-					return true
-				}
-				if i-1 >= 0 && j+2 <= 7 && board[i-1][j+2] == WhiteKnight {
-					return true
-				}
-				if i-1 >= 0 && j-2 >= 0 && board[i-1][j-2] == WhiteKnight {
-					return true
-				}
-				if i-2 >= 0 && j+1 <= 7 && board[i-2][j+1] == WhiteKnight {
-					return true
-				}
-				if i-2 >= 0 && j-1 >= 0 && board[i-2][j-1] == WhiteKnight {
-					return true
-				}
-				// check for bishop/queen checks
-				for x, y := i+1, j+1; x <= 7 && y <= 7; x, y = x+1, y+1 {
-					if board[x][y] == EmptySquare {
-						continue
-					} else if board[x][y] == WhiteBishop || board[x][y] == WhiteQueen {
-						return true
-					} else {
-						break
-					}
-				}
-				for x, y := i+1, j-1; x <= 7 && y >= 0; x, y = x+1, y-1 {
-					if board[x][y] == EmptySquare {
-						continue
-					} else if board[x][y] == WhiteBishop || board[x][y] == WhiteQueen {
-						return true
-					} else {
-						break
-					}
-				}
-				for x, y := i-1, j+1; x >= 0 && y <= 7; x, y = x-1, y+1 {
-					if board[x][y] == EmptySquare {
-						continue
-					} else if board[x][y] == WhiteBishop || board[x][y] == WhiteQueen {
-						return true
-					} else {
-						break
-					}
-				}
-				for x, y := i-1, j-1; x >= 0 && y >= 0; x, y = x-1, y-1 {
-					if board[x][y] == EmptySquare {
-						continue
-					} else if board[x][y] == WhiteBishop || board[x][y] == WhiteQueen {
-						return true
-					} else {
-						break
-					}
-				}
-
-				// check for rook/queen checks
-				for x, y := i, j+1; y <= 7; y++ {
-					if board[x][y] == EmptySquare {
-						continue
-					} else if board[x][y] == WhiteRook || board[x][y] == WhiteQueen {
-						return true
-					} else {
-						break
-					}
-				}
-				for x, y := i, j-1; y >= 0; y-- {
-					if board[x][y] == EmptySquare {
-						continue
-					} else if board[x][y] == WhiteRook || board[x][y] == WhiteQueen {
-						return true
-					} else {
-						break
-					}
-				}
-				for x, y := i+1, j; x <= 7; x++ {
-					if board[x][y] == EmptySquare {
-						continue
-					} else if board[x][y] == WhiteRook || board[x][y] == WhiteQueen {
-						return true
-					} else {
-						break
-					}
-				}
-				for x, y := i-1, j; x >= 0; x-- {
-					if board[x][y] == EmptySquare {
-						continue
-					} else if board[x][y] == WhiteRook || board[x][y] == WhiteQueen {
-						return true
-					} else {
-						break
-					}
-				}
-				return false
+				return board.IsSquareAttackedByWhite(i, j)
 			}
 		}
 	}
@@ -281,72 +290,130 @@ func (board *ChessBoard) BlackInCheck() bool {
 	return false
 }
 
-func testMove(move Move, board ChessBoard) ChessBoard {
-	turn, special, i1, j1, i2, j2 := decodeMove(move)
+func executeMoveOnBoard(move Move, board ChessBoard) (ChessBoard, bool, bool, bool, bool) {
 
-	// check castling	4-7 i
-	if special == CastleShort {
-		if turn == White {
-			board[4][0] = EmptySquare
-			board[5][0] = WhiteRook
-			board[6][0] = WhiteKing
-			board[7][0] = EmptySquare
+	whiteCanCastleShort := true
+	whiteCanCastleLong := true
+	blackCanCastleShort := true
+	blackCanCastleLong := true
+
+	if move.Type == CastleShort {
+		row := move.OldSquare.Row
+
+		// move king
+		board[6][row] = board[4][row]
+
+		// move rook
+		board[5][row] = board[7][row]
+
+		// clear spaces
+		board[4][row] = EmptySquare
+		board[7][row] = EmptySquare
+
+		if row == 0 {
+			whiteCanCastleShort = false
+			whiteCanCastleLong = false
+		} else if row == 7 {
+			blackCanCastleShort = false
+			blackCanCastleLong = false
 		} else {
-			board[4][7] = EmptySquare
-			board[5][7] = WhiteRook
-			board[6][7] = WhiteKing
-			board[7][7] = EmptySquare
+			fmt.Printf("Wait a minute... castling on rank %v???\n", row)
 		}
-		return board
-	} else if special == CastleLong {
-		if turn == White {
-			board[0][0] = EmptySquare
-			board[1][0] = EmptySquare
-			board[2][0] = WhiteKing
-			board[3][0] = WhiteRook
-			board[4][0] = EmptySquare
-		} else {
-			board[0][7] = EmptySquare
-			board[1][7] = EmptySquare
-			board[2][7] = BlackKing
-			board[3][7] = BlackRook
-			board[4][7] = EmptySquare
-		}
-		return board
+
+		return board, whiteCanCastleShort, whiteCanCastleLong, blackCanCastleShort, blackCanCastleLong
 	}
-	var movingPieceType int8 = 0
-	if special == NoSpecial || special == EnPeasant {
-		movingPieceType = board[i1][j1]
-	} else if special == PromoteToQueen {
-		if turn == White {
+	if move.Type == CastleLong {
+		row := move.OldSquare.Row
+
+		// move king
+		board[2][row] = board[4][row]
+
+		// move rook
+		board[3][row] = board[0][row]
+
+		// clear spaces
+		board[0][row] = EmptySquare
+		board[1][row] = EmptySquare
+		board[4][row] = EmptySquare
+
+		if row == 0 {
+			whiteCanCastleShort = false
+			whiteCanCastleLong = false
+		} else if row == 7 {
+			blackCanCastleShort = false
+			blackCanCastleLong = false
+		} else {
+			fmt.Printf("Wait a minute... castling on rank %v???\n", row)
+		}
+
+		return board, whiteCanCastleShort, whiteCanCastleLong, blackCanCastleShort, blackCanCastleLong
+	}
+	if move.Type == EnPassant {
+		// move pawn
+		board[move.NewSquare.Row][move.NewSquare.Col] = board[move.OldSquare.Row][move.OldSquare.Col]
+
+		// clear spaces
+		board[move.OldSquare.Row][move.OldSquare.Col] = EmptySquare
+		board[move.OldSquare.Row][move.NewSquare.Col] = EmptySquare
+
+		return board, whiteCanCastleShort, whiteCanCastleLong, blackCanCastleShort, blackCanCastleLong
+	}
+
+	movingPieceType := board[move.OldSquare.Row][move.OldSquare.Col]
+	newRow := move.NewSquare.Row
+	if move.Type == PromoteQueen {
+		if newRow == 0 {
+			movingPieceType = BlackQueen
+		} else if newRow == 7 {
 			movingPieceType = WhiteQueen
 		} else {
-			movingPieceType = BlackQueen
+			fmt.Printf("Wait a minute... promoting on rank %v???", newRow)
 		}
-	} else if special == PromoteToRook {
-		if turn == White {
+	} else if move.Type == PromoteRook {
+		if newRow == 0 {
+			movingPieceType = BlackRook
+		} else if newRow == 7 {
 			movingPieceType = WhiteRook
 		} else {
-			movingPieceType = BlackRook
+			fmt.Printf("Wait a minute... promoting on rank %v???", newRow)
 		}
-	} else if special == PromoteToBishop {
-		if turn == White {
+	} else if move.Type == PromoteBishop {
+		if newRow == 0 {
+			movingPieceType = BlackBishop
+		} else if newRow == 7 {
 			movingPieceType = WhiteBishop
 		} else {
-			movingPieceType = BlackBishop
+			fmt.Printf("Wait a minute... promoting on rank %v???", newRow)
 		}
-	} else if special == PromoteToKnight {
-		if turn == White {
+	} else if move.Type == PromoteKnight {
+		if newRow == 0 {
+			movingPieceType = BlackKnight
+		} else if newRow == 7 {
 			movingPieceType = WhiteKnight
 		} else {
-			movingPieceType = BlackKnight
+			fmt.Printf("Wait a minute... promoting on rank %v???", newRow)
 		}
 	}
 
-	board[i1][j1] = EmptySquare
-	board[i2][j2] = movingPieceType
-	if special == EnPeasant {
-		board[i2][j1] = EmptySquare
+	// make checks to see if move effects castling rights
+	if movingPieceType == WhiteKing {
+		whiteCanCastleShort = false
+		whiteCanCastleLong = false
+	} else if movingPieceType == BlackKing {
+		blackCanCastleShort = false
+		blackCanCastleLong = false
+	} else if (move.OldSquare.Row == 0 && move.OldSquare.Col == 0) || (move.NewSquare.Row == 0 && move.NewSquare.Col == 0) {
+		whiteCanCastleLong = false
+	} else if (move.OldSquare.Row == 0 && move.OldSquare.Col == 7) || (move.NewSquare.Row == 0 && move.NewSquare.Col == 7) {
+		whiteCanCastleShort = false
+	} else if (move.OldSquare.Row == 7 && move.OldSquare.Col == 0) || (move.NewSquare.Row == 7 && move.NewSquare.Col == 0) {
+		blackCanCastleLong = false
+	} else if (move.OldSquare.Row == 7 && move.OldSquare.Col == 7) || (move.NewSquare.Row == 7 && move.NewSquare.Col == 7) {
+		blackCanCastleShort = false
 	}
-	return board
+	// make move
+	board[move.NewSquare.Row][move.NewSquare.Col] = movingPieceType
+	board[move.OldSquare.Row][move.OldSquare.Col] = EmptySquare
+
+	return board, whiteCanCastleShort, whiteCanCastleLong, blackCanCastleShort, blackCanCastleLong
 }

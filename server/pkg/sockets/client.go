@@ -1,4 +1,4 @@
-package chesssockets
+package sockets
 
 import (
 	"fmt"
@@ -20,7 +20,7 @@ type Message struct {
 func (c *Client) Read() {
 	defer func() {
 		c.Conn.Close()
-		// TODO: Handle telling game and other clients about failed connection
+		c.Game.Unregister <- c
 	}()
 
 	var (

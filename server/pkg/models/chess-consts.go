@@ -24,14 +24,3 @@ const (
 	WhiteQueen
 	WhiteKing
 )
-
-const (
-	NoSpecial = iota
-	CastleShort
-	CastleLong
-	PromoteToQueen
-	PromoteToRook
-	PromoteToBishop
-	PromoteToKnight
-	EnPeasant
-)

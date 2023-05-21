@@ -12,8 +12,7 @@ func NewChessGame() *ChessGame {
 	}
 }
 
-func (game *ChessGame) ExecuteMove(move Move) {
+func (game *ChessGame) ExecuteMoveOnGame(move Move) {
 	game.Moves = append(game.Moves, move)
-	game.CurrentState = game.CurrentState.progressStateForward(move)
-	game.CurrentState.board.printChessBoard()
+	game.CurrentState = game.CurrentState.ExecuteMoveOnState(move)
 }

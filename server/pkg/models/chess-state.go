@@ -25,7 +25,7 @@ func NewChessState() *ChessState {
 	return &ChessState{
 		board:               NewChessBoard(),
 		turn:                White,
-		previousMove:        0,
+		previousMove:        Move{},
 		whiteCanCastleShort: true,
 		whiteCanCastleLong:  true,
 		blackCanCastleShort: true,
@@ -77,68 +77,64 @@ func (state *ChessState) enumerateMovesWhitePawn(moves []Move, i, j int) []Move 
 	if i == 1 {
 		// check for single move
 		if state.board[i+1][j] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, i+1, j)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, i+1, j)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 			// check for double moves
 			if state.board[i+2][j] == EmptySquare {
-				doubleMove := encodeMove(state.turn, NoSpecial, i, j, i+2, j)
-				if !moveAbandonsKing(state.board, doubleMove, state.turn) {
+				doubleMove := NewMove(Normal, i, j, i+2, j)
+				if state.isLegalMove(doubleMove) {
 					moves = append(moves, doubleMove)
 				}
 			}
 		}
 		// check for captures
 		if j-1 >= 0 && state.board[i+1][j-1] < 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, i+1, j-1)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, i+1, j-1)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		}
 		if j+1 <= 7 && state.board[i+1][j+1] < 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, i+1, j+1)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, i+1, j+1)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		}
 	} else if i == 4 {
 		// check for single push
 		if state.board[i+1][j] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, i+1, j)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, i+1, j)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		}
 		// check for captures
 		if j-1 >= 0 && state.board[i+1][j-1] < 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, i+1, j-1)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, i+1, j-1)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		}
 		if j+1 <= 7 && state.board[i+1][j+1] < 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, i+1, j+1)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, i+1, j+1)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		}
 		// check for en peasant
-		prev := uint16(state.previousMove)
-		special := (prev & SpecialMask) >> 13
-		if special == 0 {
-			i1 := (prev & StartIMask) >> 1
-			i2 := (prev & EndIMask) >> 7
-			j2 := (prev & EndJMask) >> 10
-			if i1 == 6 && i2 == 4 && state.board[i2][j2] == BlackPawn {
-				if j-1 == int(j2) {
-					move := encodeMove(state.turn, EnPeasant, i, j, i+1, j-1)
-					if !moveAbandonsKing(state.board, move, state.turn) {
+		prev := state.previousMove
+		if prev.Type == Normal {
+			if prev.OldSquare.Row == 6 && prev.NewSquare.Row == 4 && state.board[prev.NewSquare.Row][prev.NewSquare.Col] == BlackPawn {
+				if j-1 == prev.NewSquare.Col {
+					move := NewMove(EnPassant, i, j, i+1, j-1)
+					if state.isLegalMove(move) {
 						moves = append(moves, move)
 					}
-				} else if j+1 == int(j2) {
-					move := encodeMove(state.turn, EnPeasant, i, j, i+1, j+1)
-					if !moveAbandonsKing(state.board, move, state.turn) {
+				} else if j+1 == prev.NewSquare.Col {
+					move := NewMove(EnPassant, i, j, i+1, j+1)
+					if state.isLegalMove(move) {
 						moves = append(moves, move)
 					}
 				}
@@ -147,51 +143,51 @@ func (state *ChessState) enumerateMovesWhitePawn(moves []Move, i, j int) []Move 
 	} else if i == 6 {
 		// check for single push
 		if state.board[i+1][j] == EmptySquare {
-			movePromoteQueen := encodeMove(state.turn, PromoteToQueen, i, j, i+1, j)
-			movePromoteRook := encodeMove(state.turn, PromoteToRook, i, j, i+1, j)
-			movePromoteBishop := encodeMove(state.turn, PromoteToBishop, i, j, i+1, j)
-			movePromoteKnight := encodeMove(state.turn, PromoteToKnight, i, j, i+1, j)
-			if !moveAbandonsKing(state.board, movePromoteQueen, state.turn) {
+			movePromoteQueen := NewMove(PromoteQueen, i, j, i+1, j)
+			movePromoteRook := NewMove(PromoteRook, i, j, i+1, j)
+			movePromoteBishop := NewMove(PromoteBishop, i, j, i+1, j)
+			movePromoteKnight := NewMove(PromoteKnight, i, j, i+1, j)
+			if state.isLegalMove(movePromoteQueen) {
 				moves = append(moves, movePromoteQueen, movePromoteRook, movePromoteBishop, movePromoteKnight)
 			}
 		}
 		// check for captures
 		if j-1 >= 0 && state.board[i+1][j-1] < 0 {
-			movePromoteQueen := encodeMove(state.turn, PromoteToQueen, i, j, i+1, j-1)
-			movePromoteRook := encodeMove(state.turn, PromoteToRook, i, j, i+1, j-1)
-			movePromoteBishop := encodeMove(state.turn, PromoteToBishop, i, j, i+1, j-1)
-			movePromoteKnight := encodeMove(state.turn, PromoteToKnight, i, j, i+1, j-1)
-			if !moveAbandonsKing(state.board, movePromoteQueen, state.turn) {
+			movePromoteQueen := NewMove(PromoteQueen, i, j, i+1, j-1)
+			movePromoteRook := NewMove(PromoteRook, i, j, i+1, j-1)
+			movePromoteBishop := NewMove(PromoteBishop, i, j, i+1, j-1)
+			movePromoteKnight := NewMove(PromoteKnight, i, j, i+1, j-1)
+			if state.isLegalMove(movePromoteQueen) {
 				moves = append(moves, movePromoteQueen, movePromoteRook, movePromoteBishop, movePromoteKnight)
 			}
 		}
 		if j+1 <= 7 && state.board[i+1][j+1] < 0 {
-			movePromoteQueen := encodeMove(state.turn, PromoteToQueen, i, j, i+1, j+1)
-			movePromoteRook := encodeMove(state.turn, PromoteToRook, i, j, i+1, j+1)
-			movePromoteBishop := encodeMove(state.turn, PromoteToBishop, i, j, i+1, j+1)
-			movePromoteKnight := encodeMove(state.turn, PromoteToKnight, i, j, i+1, j+1)
-			if !moveAbandonsKing(state.board, movePromoteQueen, state.turn) {
+			movePromoteQueen := NewMove(PromoteQueen, i, j, i+1, j+1)
+			movePromoteRook := NewMove(PromoteRook, i, j, i+1, j+1)
+			movePromoteBishop := NewMove(PromoteBishop, i, j, i+1, j+1)
+			movePromoteKnight := NewMove(PromoteKnight, i, j, i+1, j+1)
+			if state.isLegalMove(movePromoteQueen) {
 				moves = append(moves, movePromoteQueen, movePromoteRook, movePromoteBishop, movePromoteKnight)
 			}
 		}
 	} else {
 		// check for single push
 		if state.board[i+1][j] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, i+1, j)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, i+1, j)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		}
 		// check for captures
 		if j-1 >= 0 && state.board[i+1][j-1] < 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, i+1, j-1)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, i+1, j-1)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		}
 		if j+1 <= 7 && state.board[i+1][j+1] < 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, i+1, j+1)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, i+1, j+1)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		}
@@ -201,50 +197,50 @@ func (state *ChessState) enumerateMovesWhitePawn(moves []Move, i, j int) []Move 
 
 func (state *ChessState) enumerateMovesWhiteKnight(moves []Move, i, j int) []Move {
 	if i+1 <= 7 && j+2 <= 7 && state.board[i+1][j+2] <= 0 {
-		move := encodeMove(state.turn, NoSpecial, i, j, i+1, j+2)
-		if !moveAbandonsKing(state.board, move, state.turn) {
+		move := NewMove(Normal, i, j, i+1, j+2)
+		if state.isLegalMove(move) {
 			moves = append(moves, move)
 		}
 	}
 	if i+1 <= 7 && j-2 >= 0 && state.board[i+1][j-2] <= 0 {
-		move := encodeMove(state.turn, NoSpecial, i, j, i+1, j-2)
-		if !moveAbandonsKing(state.board, move, state.turn) {
+		move := NewMove(Normal, i, j, i+1, j-2)
+		if state.isLegalMove(move) {
 			moves = append(moves, move)
 		}
 	}
 	if i+2 <= 7 && j+1 <= 7 && state.board[i+2][j+1] <= 0 {
-		move := encodeMove(state.turn, NoSpecial, i, j, i+2, j+1)
-		if !moveAbandonsKing(state.board, move, state.turn) {
+		move := NewMove(Normal, i, j, i+2, j+1)
+		if state.isLegalMove(move) {
 			moves = append(moves, move)
 		}
 	}
 	if i+2 <= 7 && j-1 >= 0 && state.board[i+2][j-1] <= 0 {
-		move := encodeMove(state.turn, NoSpecial, i, j, i+2, j-1)
-		if !moveAbandonsKing(state.board, move, state.turn) {
+		move := NewMove(Normal, i, j, i+2, j-1)
+		if state.isLegalMove(move) {
 			moves = append(moves, move)
 		}
 	}
 	if i-1 >= 0 && j+2 <= 7 && state.board[i-1][j+2] <= 0 {
-		move := encodeMove(state.turn, NoSpecial, i, j, i-1, j+2)
-		if !moveAbandonsKing(state.board, move, state.turn) {
+		move := NewMove(Normal, i, j, i-1, j+2)
+		if state.isLegalMove(move) {
 			moves = append(moves, move)
 		}
 	}
 	if i-1 >= 0 && j-2 >= 0 && state.board[i-1][j-2] <= 0 {
-		move := encodeMove(state.turn, NoSpecial, i, j, i-1, j-2)
-		if !moveAbandonsKing(state.board, move, state.turn) {
+		move := NewMove(Normal, i, j, i-1, j-2)
+		if state.isLegalMove(move) {
 			moves = append(moves, move)
 		}
 	}
 	if i-2 >= 0 && j+1 <= 7 && state.board[i-2][j+1] <= 0 {
-		move := encodeMove(state.turn, NoSpecial, i, j, i-2, j+1)
-		if !moveAbandonsKing(state.board, move, state.turn) {
+		move := NewMove(Normal, i, j, i-2, j+1)
+		if state.isLegalMove(move) {
 			moves = append(moves, move)
 		}
 	}
 	if i-2 >= 0 && j-1 >= 0 && state.board[i-2][j-1] <= 0 {
-		move := encodeMove(state.turn, NoSpecial, i, j, i-2, j-1)
-		if !moveAbandonsKing(state.board, move, state.turn) {
+		move := NewMove(Normal, i, j, i-2, j-1)
+		if state.isLegalMove(move) {
 			moves = append(moves, move)
 		}
 	}
@@ -254,13 +250,13 @@ func (state *ChessState) enumerateMovesWhiteKnight(moves []Move, i, j int) []Mov
 func (state *ChessState) enumerateMovesWhiteBishop(moves []Move, i, j int) []Move {
 	for x, y := i+1, j+1; x <= 7 && y <= 7; x, y = x+1, y+1 {
 		if state.board[x][y] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		} else if state.board[x][y] < 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 			break
@@ -270,13 +266,13 @@ func (state *ChessState) enumerateMovesWhiteBishop(moves []Move, i, j int) []Mov
 	}
 	for x, y := i+1, j-1; x <= 7 && y >= 0; x, y = x+1, y-1 {
 		if state.board[x][y] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		} else if state.board[x][y] < 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 			break
@@ -286,13 +282,13 @@ func (state *ChessState) enumerateMovesWhiteBishop(moves []Move, i, j int) []Mov
 	}
 	for x, y := i-1, j+1; x >= 0 && y <= 7; x, y = x-1, y+1 {
 		if state.board[x][y] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		} else if state.board[x][y] < 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 			break
@@ -302,13 +298,13 @@ func (state *ChessState) enumerateMovesWhiteBishop(moves []Move, i, j int) []Mov
 	}
 	for x, y := i-1, j-1; x >= 0 && y >= 0; x, y = x-1, y-1 {
 		if state.board[x][y] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		} else if state.board[x][y] < 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 			break
@@ -322,13 +318,13 @@ func (state *ChessState) enumerateMovesWhiteBishop(moves []Move, i, j int) []Mov
 func (state *ChessState) enumerateMovesWhiteRook(moves []Move, i, j int) []Move {
 	for x, y := i, j+1; y <= 7; y++ {
 		if state.board[x][y] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		} else if state.board[x][y] < 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 			break
@@ -338,13 +334,13 @@ func (state *ChessState) enumerateMovesWhiteRook(moves []Move, i, j int) []Move 
 	}
 	for x, y := i, j-1; y >= 0; y-- {
 		if state.board[x][y] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		} else if state.board[x][y] < 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 			break
@@ -354,13 +350,13 @@ func (state *ChessState) enumerateMovesWhiteRook(moves []Move, i, j int) []Move 
 	}
 	for x, y := i+1, j; x <= 7; x++ {
 		if state.board[x][y] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		} else if state.board[x][y] < 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 			break
@@ -370,13 +366,13 @@ func (state *ChessState) enumerateMovesWhiteRook(moves []Move, i, j int) []Move 
 	}
 	for x, y := i-1, j; x >= 0; x-- {
 		if state.board[x][y] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		} else if state.board[x][y] < 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 			break
@@ -391,13 +387,13 @@ func (state *ChessState) enumerateMovesWhiteQueen(moves []Move, i, j int) []Move
 	// bishop like movement
 	for x, y := i+1, j+1; x <= 7 && y <= 7; x, y = x+1, y+1 {
 		if state.board[x][y] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		} else if state.board[x][y] < 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 			break
@@ -407,13 +403,13 @@ func (state *ChessState) enumerateMovesWhiteQueen(moves []Move, i, j int) []Move
 	}
 	for x, y := i+1, j-1; x <= 7 && y >= 0; x, y = x+1, y-1 {
 		if state.board[x][y] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		} else if state.board[x][y] < 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 			break
@@ -423,13 +419,13 @@ func (state *ChessState) enumerateMovesWhiteQueen(moves []Move, i, j int) []Move
 	}
 	for x, y := i-1, j+1; x >= 0 && y <= 7; x, y = x-1, y+1 {
 		if state.board[x][y] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		} else if state.board[x][y] < 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 			break
@@ -439,13 +435,13 @@ func (state *ChessState) enumerateMovesWhiteQueen(moves []Move, i, j int) []Move
 	}
 	for x, y := i-1, j-1; x >= 0 && y >= 0; x, y = x-1, y-1 {
 		if state.board[x][y] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		} else if state.board[x][y] < 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 			break
@@ -457,13 +453,13 @@ func (state *ChessState) enumerateMovesWhiteQueen(moves []Move, i, j int) []Move
 	// rook like movement
 	for x, y := i, j+1; y <= 7; y++ {
 		if state.board[x][y] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		} else if state.board[x][y] < 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 			break
@@ -473,13 +469,13 @@ func (state *ChessState) enumerateMovesWhiteQueen(moves []Move, i, j int) []Move
 	}
 	for x, y := i, j-1; y >= 0; y-- {
 		if state.board[x][y] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		} else if state.board[x][y] < 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 			break
@@ -489,13 +485,13 @@ func (state *ChessState) enumerateMovesWhiteQueen(moves []Move, i, j int) []Move
 	}
 	for x, y := i+1, j; x <= 7; x++ {
 		if state.board[x][y] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		} else if state.board[x][y] < 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 			break
@@ -505,13 +501,13 @@ func (state *ChessState) enumerateMovesWhiteQueen(moves []Move, i, j int) []Move
 	}
 	for x, y := i-1, j; x >= 0; x-- {
 		if state.board[x][y] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		} else if state.board[x][y] < 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 			break
@@ -525,50 +521,50 @@ func (state *ChessState) enumerateMovesWhiteQueen(moves []Move, i, j int) []Move
 func (state *ChessState) enumerateMovesWhiteKing(moves []Move, i, j int) []Move {
 	// TODO: Castling
 	if i+1 <= 7 && j+1 <= 7 && state.board[i+1][j+1] <= 0 {
-		move := encodeMove(state.turn, NoSpecial, i, j, i+1, j+1)
-		if !moveAbandonsKing(state.board, move, state.turn) {
+		move := NewMove(Normal, i, j, i+1, j+1)
+		if state.isLegalMove(move) {
 			moves = append(moves, move)
 		}
 	}
 	if j+1 <= 7 && state.board[i][j+1] <= 0 {
-		move := encodeMove(state.turn, NoSpecial, i, j, i, j+1)
-		if !moveAbandonsKing(state.board, move, state.turn) {
+		move := NewMove(Normal, i, j, i, j+1)
+		if state.isLegalMove(move) {
 			moves = append(moves, move)
 		}
 	}
 	if i-1 >= 0 && j+1 <= 7 && state.board[i-1][j+1] <= 0 {
-		move := encodeMove(state.turn, NoSpecial, i, j, i-1, j+1)
-		if !moveAbandonsKing(state.board, move, state.turn) {
+		move := NewMove(Normal, i, j, i-1, j+1)
+		if state.isLegalMove(move) {
 			moves = append(moves, move)
 		}
 	}
 	if i+1 <= 7 && state.board[i+1][j] <= 0 {
-		move := encodeMove(state.turn, NoSpecial, i, j, i+1, j)
-		if !moveAbandonsKing(state.board, move, state.turn) {
+		move := NewMove(Normal, i, j, i+1, j)
+		if state.isLegalMove(move) {
 			moves = append(moves, move)
 		}
 	}
 	if i-1 >= 0 && state.board[i-1][j] <= 0 {
-		move := encodeMove(state.turn, NoSpecial, i, j, i-1, j)
-		if !moveAbandonsKing(state.board, move, state.turn) {
+		move := NewMove(Normal, i, j, i-1, j)
+		if state.isLegalMove(move) {
 			moves = append(moves, move)
 		}
 	}
 	if i+1 <= 7 && j-1 >= 0 && state.board[i+1][j-1] <= 0 {
-		move := encodeMove(state.turn, NoSpecial, i, j, i+1, j-1)
-		if !moveAbandonsKing(state.board, move, state.turn) {
+		move := NewMove(Normal, i, j, i+1, j-1)
+		if state.isLegalMove(move) {
 			moves = append(moves, move)
 		}
 	}
 	if j-1 >= 0 && state.board[i][j-1] <= 0 {
-		move := encodeMove(state.turn, NoSpecial, i, j, i, j-1)
-		if !moveAbandonsKing(state.board, move, state.turn) {
+		move := NewMove(Normal, i, j, i, j-1)
+		if state.isLegalMove(move) {
 			moves = append(moves, move)
 		}
 	}
 	if i-1 >= 0 && j-1 >= 0 && state.board[i-1][j-1] <= 0 {
-		move := encodeMove(state.turn, NoSpecial, i, j, i-1, j-1)
-		if !moveAbandonsKing(state.board, move, state.turn) {
+		move := NewMove(Normal, i, j, i-1, j-1)
+		if state.isLegalMove(move) {
 			moves = append(moves, move)
 		}
 	}
@@ -605,68 +601,64 @@ func (state *ChessState) enumerateMovesBlackPawn(moves []Move, i, j int) []Move 
 	if i == 2 {
 		// check for single move
 		if state.board[i-1][j] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, i-1, j)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, i-1, j)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 			// check for double move
 			if state.board[i-2][j] == EmptySquare {
-				doubleMove := encodeMove(state.turn, NoSpecial, i, j, i-2, j)
-				if !moveAbandonsKing(state.board, doubleMove, state.turn) {
+				doubleMove := NewMove(Normal, i, j, i-2, j)
+				if state.isLegalMove(doubleMove) {
 					moves = append(moves, doubleMove)
 				}
 			}
 		}
 		// check for captures
 		if j-1 >= 0 && state.board[i-1][j-1] > 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, i-1, j-1)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, i-1, j-1)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		}
 		if j+1 <= 7 && state.board[i-1][j+1] > 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, i-1, j+1)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, i-1, j+1)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		}
 	} else if i == 3 {
 		// check for single push
 		if state.board[i-1][j] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, i-1, j)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, i-1, j)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		}
 		// check for captures
 		if j-1 >= 0 && state.board[i-1][j-1] > 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, i-1, j-1)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, i-1, j-1)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		}
 		if j+1 <= 7 && state.board[i-1][j+1] > 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, i-1, j+1)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, i-1, j+1)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		}
 		// check for en peasant
-		prev := uint16(state.previousMove)
-		special := (prev & SpecialMask) >> 13
-		if special == 0 {
-			i1 := (prev & StartJMask) >> 1
-			i2 := (prev & EndIMask) >> 7
-			j2 := (prev & EndJMask) >> 10
-			if i1 == 1 && i2 == 3 && state.board[i2][j2] == WhitePawn {
-				if j-1 == int(j2) {
-					move := encodeMove(state.turn, EnPeasant, i, j, i-1, j-1)
-					if !moveAbandonsKing(state.board, move, state.turn) {
+		prev := state.previousMove
+		if prev.Type == Normal {
+			if prev.OldSquare.Row == 1 && prev.NewSquare.Row == 3 && state.board[prev.NewSquare.Row][prev.NewSquare.Col] == WhitePawn {
+				if j-1 == prev.NewSquare.Col {
+					move := NewMove(EnPassant, i, j, i-1, j-1)
+					if state.isLegalMove(move) {
 						moves = append(moves, move)
 					}
-				} else if j+1 == int(j2) {
-					move := encodeMove(state.turn, EnPeasant, i, j, i-1, j+1)
-					if !moveAbandonsKing(state.board, move, state.turn) {
+				} else if j+1 == prev.NewSquare.Col {
+					move := NewMove(EnPassant, i, j, i-1, j+1)
+					if state.isLegalMove(move) {
 						moves = append(moves, move)
 					}
 				}
@@ -676,51 +668,51 @@ func (state *ChessState) enumerateMovesBlackPawn(moves []Move, i, j int) []Move 
 	} else if i == 1 {
 		// check for single push
 		if state.board[i-1][j] == EmptySquare {
-			movePromoteQueen := encodeMove(state.turn, PromoteToQueen, i, j, i-1, j)
-			movePromoteRook := encodeMove(state.turn, PromoteToRook, i, j, i-1, j)
-			movePromoteBishop := encodeMove(state.turn, PromoteToBishop, i, j, i-1, j)
-			movePromoteKnight := encodeMove(state.turn, PromoteToKnight, i, j, i-1, j)
-			if !moveAbandonsKing(state.board, movePromoteQueen, state.turn) {
+			movePromoteQueen := NewMove(PromoteQueen, i, j, i-1, j)
+			movePromoteRook := NewMove(PromoteRook, i, j, i-1, j)
+			movePromoteBishop := NewMove(PromoteBishop, i, j, i-1, j)
+			movePromoteKnight := NewMove(PromoteKnight, i, j, i-1, j)
+			if state.isLegalMove(movePromoteQueen) {
 				moves = append(moves, movePromoteQueen, movePromoteRook, movePromoteBishop, movePromoteKnight)
 			}
 		}
 		// check for captures
 		if j-1 >= 0 && state.board[i-1][j-1] > 0 {
-			movePromoteQueen := encodeMove(state.turn, PromoteToQueen, i, j, i-1, j-1)
-			movePromoteRook := encodeMove(state.turn, PromoteToRook, i, j, i-1, j-1)
-			movePromoteBishop := encodeMove(state.turn, PromoteToBishop, i, j, i-1, j-1)
-			movePromoteKnight := encodeMove(state.turn, PromoteToKnight, i, j, i-1, j-1)
-			if !moveAbandonsKing(state.board, movePromoteQueen, state.turn) {
+			movePromoteQueen := NewMove(PromoteQueen, i, j, i-1, j-1)
+			movePromoteRook := NewMove(PromoteRook, i, j, i-1, j-1)
+			movePromoteBishop := NewMove(PromoteBishop, i, j, i-1, j-1)
+			movePromoteKnight := NewMove(PromoteKnight, i, j, i-1, j-1)
+			if state.isLegalMove(movePromoteQueen) {
 				moves = append(moves, movePromoteQueen, movePromoteRook, movePromoteBishop, movePromoteKnight)
 			}
 		}
 		if j+1 <= 7 && state.board[i-1][j+1] > 0 {
-			movePromoteQueen := encodeMove(state.turn, PromoteToQueen, i, j, i-1, j+1)
-			movePromoteRook := encodeMove(state.turn, PromoteToRook, i, j, i-1, j+1)
-			movePromoteBishop := encodeMove(state.turn, PromoteToBishop, i, j, i-1, j+1)
-			movePromoteKnight := encodeMove(state.turn, PromoteToKnight, i, j, i-1, j+1)
-			if !moveAbandonsKing(state.board, movePromoteQueen, state.turn) {
+			movePromoteQueen := NewMove(PromoteQueen, i, j, i-1, j+1)
+			movePromoteRook := NewMove(PromoteRook, i, j, i-1, j+1)
+			movePromoteBishop := NewMove(PromoteBishop, i, j, i-1, j+1)
+			movePromoteKnight := NewMove(PromoteKnight, i, j, i-1, j+1)
+			if state.isLegalMove(movePromoteQueen) {
 				moves = append(moves, movePromoteQueen, movePromoteRook, movePromoteBishop, movePromoteKnight)
 			}
 		}
 	} else {
 		// check for single push
 		if state.board[i-1][j] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, i-1, j)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, i-1, j)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		}
 		// check for captures
 		if j-1 >= 0 && state.board[i-1][j-1] > 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, i-1, j-1)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, i-1, j-1)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		}
 		if j+1 <= 7 && state.board[i-1][j+1] > 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, i+1, j-1)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, i+1, j-1)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		}
@@ -731,50 +723,50 @@ func (state *ChessState) enumerateMovesBlackPawn(moves []Move, i, j int) []Move 
 
 func (state *ChessState) enumerateMovesBlackKnight(moves []Move, i, j int) []Move {
 	if i+1 <= 7 && j+2 <= 7 && state.board[i+1][j+2] >= 0 {
-		move := encodeMove(state.turn, NoSpecial, i, j, i+1, j+2)
-		if !moveAbandonsKing(state.board, move, state.turn) {
+		move := NewMove(Normal, i, j, i+1, j+2)
+		if state.isLegalMove(move) {
 			moves = append(moves, move)
 		}
 	}
 	if i+1 <= 7 && j-2 >= 0 && state.board[i+1][j-2] >= 0 {
-		move := encodeMove(state.turn, NoSpecial, i, j, i+1, j-2)
-		if !moveAbandonsKing(state.board, move, state.turn) {
+		move := NewMove(Normal, i, j, i+1, j-2)
+		if state.isLegalMove(move) {
 			moves = append(moves, move)
 		}
 	}
 	if i+2 <= 7 && j+1 <= 7 && state.board[i+2][j+1] >= 0 {
-		move := encodeMove(state.turn, NoSpecial, i, j, i+2, j+1)
-		if !moveAbandonsKing(state.board, move, state.turn) {
+		move := NewMove(Normal, i, j, i+2, j+1)
+		if state.isLegalMove(move) {
 			moves = append(moves, move)
 		}
 	}
 	if i+2 <= 7 && j-1 >= 0 && state.board[i+2][j-1] >= 0 {
-		move := encodeMove(state.turn, NoSpecial, i, j, i+2, j-1)
-		if !moveAbandonsKing(state.board, move, state.turn) {
+		move := NewMove(Normal, i, j, i+2, j-1)
+		if state.isLegalMove(move) {
 			moves = append(moves, move)
 		}
 	}
 	if i-1 >= 0 && j+2 <= 7 && state.board[i-1][j+2] >= 0 {
-		move := encodeMove(state.turn, NoSpecial, i, j, i-1, j+2)
-		if !moveAbandonsKing(state.board, move, state.turn) {
+		move := NewMove(Normal, i, j, i-1, j+2)
+		if state.isLegalMove(move) {
 			moves = append(moves, move)
 		}
 	}
 	if i-1 >= 0 && j-2 >= 0 && state.board[i-1][j-2] >= 0 {
-		move := encodeMove(state.turn, NoSpecial, i, j, i-1, j-2)
-		if !moveAbandonsKing(state.board, move, state.turn) {
+		move := NewMove(Normal, i, j, i-1, j-2)
+		if state.isLegalMove(move) {
 			moves = append(moves, move)
 		}
 	}
 	if i-2 >= 0 && j+1 <= 7 && state.board[i-2][j+1] >= 0 {
-		move := encodeMove(state.turn, NoSpecial, i, j, i-2, j+1)
-		if !moveAbandonsKing(state.board, move, state.turn) {
+		move := NewMove(Normal, i, j, i-2, j+1)
+		if state.isLegalMove(move) {
 			moves = append(moves, move)
 		}
 	}
 	if i-2 >= 0 && j-1 >= 0 && state.board[i-2][j-1] >= 0 {
-		move := encodeMove(state.turn, NoSpecial, i, j, i-2, j-1)
-		if !moveAbandonsKing(state.board, move, state.turn) {
+		move := NewMove(Normal, i, j, i-2, j-1)
+		if state.isLegalMove(move) {
 			moves = append(moves, move)
 		}
 	}
@@ -784,13 +776,13 @@ func (state *ChessState) enumerateMovesBlackKnight(moves []Move, i, j int) []Mov
 func (state *ChessState) enumerateMovesBlackBishop(moves []Move, i, j int) []Move {
 	for x, y := i+1, j+1; x <= 7 && y <= 7; x, y = x+1, y+1 {
 		if state.board[x][y] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		} else if state.board[x][y] > 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 			break
@@ -800,13 +792,13 @@ func (state *ChessState) enumerateMovesBlackBishop(moves []Move, i, j int) []Mov
 	}
 	for x, y := i+1, j-1; x <= 7 && y >= 0; x, y = x+1, y-1 {
 		if state.board[x][y] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		} else if state.board[x][y] > 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 			break
@@ -816,13 +808,13 @@ func (state *ChessState) enumerateMovesBlackBishop(moves []Move, i, j int) []Mov
 	}
 	for x, y := i-1, j+1; x >= 0 && y <= 7; x, y = x-1, y+1 {
 		if state.board[x][y] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		} else if state.board[x][y] > 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 			break
@@ -832,13 +824,13 @@ func (state *ChessState) enumerateMovesBlackBishop(moves []Move, i, j int) []Mov
 	}
 	for x, y := i-1, j-1; x >= 0 && y >= 0; x, y = x-1, y-1 {
 		if state.board[x][y] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		} else if state.board[x][y] > 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 			break
@@ -852,13 +844,13 @@ func (state *ChessState) enumerateMovesBlackBishop(moves []Move, i, j int) []Mov
 func (state *ChessState) enumerateMovesBlackRook(moves []Move, i, j int) []Move {
 	for x, y := i, j+1; y <= 7; y++ {
 		if state.board[x][y] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		} else if state.board[x][y] > 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 			break
@@ -868,13 +860,13 @@ func (state *ChessState) enumerateMovesBlackRook(moves []Move, i, j int) []Move 
 	}
 	for x, y := i, j-1; y >= 0; y-- {
 		if state.board[x][y] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		} else if state.board[x][y] > 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 			break
@@ -884,13 +876,13 @@ func (state *ChessState) enumerateMovesBlackRook(moves []Move, i, j int) []Move 
 	}
 	for x, y := i+1, j; x <= 7; x++ {
 		if state.board[x][y] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		} else if state.board[x][y] > 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 			break
@@ -900,13 +892,13 @@ func (state *ChessState) enumerateMovesBlackRook(moves []Move, i, j int) []Move 
 	}
 	for x, y := i-1, j; x >= 0; x-- {
 		if state.board[x][y] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		} else if state.board[x][y] > 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 			break
@@ -920,13 +912,13 @@ func (state *ChessState) enumerateMovesBlackRook(moves []Move, i, j int) []Move 
 func (state *ChessState) enumerateMovesBlackQueen(moves []Move, i, j int) []Move {
 	for x, y := i+1, j+1; x <= 7 && y <= 7; x, y = x+1, y+1 {
 		if state.board[x][y] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		} else if state.board[x][y] > 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 			break
@@ -936,13 +928,13 @@ func (state *ChessState) enumerateMovesBlackQueen(moves []Move, i, j int) []Move
 	}
 	for x, y := i+1, j-1; x <= 7 && y >= 0; x, y = x+1, y-1 {
 		if state.board[x][y] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		} else if state.board[x][y] > 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 			break
@@ -952,13 +944,13 @@ func (state *ChessState) enumerateMovesBlackQueen(moves []Move, i, j int) []Move
 	}
 	for x, y := i-1, j+1; x >= 0 && y <= 7; x, y = x-1, y+1 {
 		if state.board[x][y] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		} else if state.board[x][y] > 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 			break
@@ -968,13 +960,13 @@ func (state *ChessState) enumerateMovesBlackQueen(moves []Move, i, j int) []Move
 	}
 	for x, y := i-1, j-1; x >= 0 && y >= 0; x, y = x-1, y-1 {
 		if state.board[x][y] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		} else if state.board[x][y] > 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 			break
@@ -984,13 +976,13 @@ func (state *ChessState) enumerateMovesBlackQueen(moves []Move, i, j int) []Move
 	}
 	for x, y := i, j+1; y <= 7; y++ {
 		if state.board[x][y] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		} else if state.board[x][y] > 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 			break
@@ -1000,13 +992,13 @@ func (state *ChessState) enumerateMovesBlackQueen(moves []Move, i, j int) []Move
 	}
 	for x, y := i, j-1; y >= 0; y-- {
 		if state.board[x][y] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		} else if state.board[x][y] > 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 			break
@@ -1016,13 +1008,13 @@ func (state *ChessState) enumerateMovesBlackQueen(moves []Move, i, j int) []Move
 	}
 	for x, y := i+1, j; x <= 7; x++ {
 		if state.board[x][y] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		} else if state.board[x][y] > 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 			break
@@ -1032,13 +1024,13 @@ func (state *ChessState) enumerateMovesBlackQueen(moves []Move, i, j int) []Move
 	}
 	for x, y := i-1, j; x >= 0; x-- {
 		if state.board[x][y] == EmptySquare {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 		} else if state.board[x][y] > 0 {
-			move := encodeMove(state.turn, NoSpecial, i, j, x, y)
-			if !moveAbandonsKing(state.board, move, state.turn) {
+			move := NewMove(Normal, i, j, x, y)
+			if state.isLegalMove(move) {
 				moves = append(moves, move)
 			}
 			break
@@ -1052,165 +1044,88 @@ func (state *ChessState) enumerateMovesBlackQueen(moves []Move, i, j int) []Move
 func (state *ChessState) enumerateMovesBlackKing(moves []Move, i, j int) []Move {
 	// TODO: Castling
 	if i+1 <= 7 && j+1 <= 7 && state.board[i+1][j+1] >= 0 {
-		move := encodeMove(state.turn, NoSpecial, i, j, i+1, j+1)
-		if !moveAbandonsKing(state.board, move, state.turn) {
+		move := NewMove(Normal, i, j, i+1, j+1)
+		if state.isLegalMove(move) {
 			moves = append(moves, move)
 		}
 	}
 	if j+1 <= 7 && state.board[i][j+1] >= 0 {
-		move := encodeMove(state.turn, NoSpecial, i, j, i, j+1)
-		if !moveAbandonsKing(state.board, move, state.turn) {
+		move := NewMove(Normal, i, j, i, j+1)
+		if state.isLegalMove(move) {
 			moves = append(moves, move)
 		}
 	}
 	if i-1 >= 0 && j+1 <= 7 && state.board[i-1][j+1] >= 0 {
-		move := encodeMove(state.turn, NoSpecial, i, j, i-1, j+1)
-		if !moveAbandonsKing(state.board, move, state.turn) {
+		move := NewMove(Normal, i, j, i-1, j+1)
+		if state.isLegalMove(move) {
 			moves = append(moves, move)
 		}
 	}
 	if i+1 <= 7 && state.board[i+1][j] >= 0 {
-		move := encodeMove(state.turn, NoSpecial, i, j, i+1, j)
-		if !moveAbandonsKing(state.board, move, state.turn) {
+		move := NewMove(Normal, i, j, i+1, j)
+		if state.isLegalMove(move) {
 			moves = append(moves, move)
 		}
 	}
 	if i-1 >= 0 && state.board[i-1][j] >= 0 {
-		move := encodeMove(state.turn, NoSpecial, i, j, i-1, j)
-		if !moveAbandonsKing(state.board, move, state.turn) {
+		move := NewMove(Normal, i, j, i-1, j)
+		if state.isLegalMove(move) {
 			moves = append(moves, move)
 		}
 	}
 	if i+1 <= 7 && j-1 >= 0 && state.board[i+1][j-1] >= 0 {
-		move := encodeMove(state.turn, NoSpecial, i, j, i+1, j-1)
-		if !moveAbandonsKing(state.board, move, state.turn) {
+		move := NewMove(Normal, i, j, i+1, j-1)
+		if state.isLegalMove(move) {
 			moves = append(moves, move)
 		}
 	}
 	if j-1 >= 0 && state.board[i][j-1] >= 0 {
-		move := encodeMove(state.turn, NoSpecial, i, j, i, j-1)
-		if !moveAbandonsKing(state.board, move, state.turn) {
+		move := NewMove(Normal, i, j, i, j-1)
+		if state.isLegalMove(move) {
 			moves = append(moves, move)
 		}
 	}
 	if i-1 >= 0 && j-1 >= 0 && state.board[i-1][j-1] >= 0 {
-		move := encodeMove(state.turn, NoSpecial, i, j, i-1, j-1)
-		if !moveAbandonsKing(state.board, move, state.turn) {
+		move := NewMove(Normal, i, j, i-1, j-1)
+		if state.isLegalMove(move) {
 			moves = append(moves, move)
 		}
 	}
 	return moves
 }
 
-// returns true if move illegally places king in check
-func moveAbandonsKing(board *ChessBoard, move Move, turn int8) bool {
-	newBoard := testMove(move, *board)
-	if turn == White {
-		return newBoard.WhiteInCheck()
+// returns true if the move is legal
+// returns false if making the move would leave self in check at the end of turn
+func (state *ChessState) isLegalMove(move Move) bool {
+	board, _, _, _, _ := executeMoveOnBoard(move, *state.board)
+	if state.turn == White {
+		return !board.IsWhiteInCheck()
+	} else if state.turn == Black {
+		return !board.IsBlackInCheck()
 	} else {
-		return newBoard.BlackInCheck()
+		fmt.Println("Wait a minute... that isn't an option for whose turn it can be.")
+		return false
 	}
 }
 
-func (state *ChessState) progressStateForward(move Move) *ChessState {
+func (state *ChessState) ExecuteMoveOnState(move Move) *ChessState {
+
+	newBoard, wCastleShort, wCastleLong, bCastleShort, bCastleLong := executeMoveOnBoard(move, *state.board)
+
+	state.board = &newBoard
+	state.whiteCanCastleShort = state.whiteCanCastleShort && wCastleShort
+	state.whiteCanCastleLong = state.whiteCanCastleLong && wCastleLong
+	state.blackCanCastleShort = state.blackCanCastleShort && bCastleShort
+	state.blackCanCastleLong = state.whiteCanCastleLong && bCastleLong
+
 	state.previousMove = move
-	turn, special, i1, j1, i2, j2 := decodeMove(move)
-
-	// check castling	4-7 i
-	if special == CastleShort {
-		if turn == White {
-			state.board[4][0] = EmptySquare
-			state.board[5][0] = WhiteRook
-			state.board[6][0] = WhiteKing
-			state.board[7][0] = EmptySquare
-			state.whiteCanCastleShort = false
-			state.whiteCanCastleLong = false
-		} else {
-			state.board[4][7] = EmptySquare
-			state.board[5][7] = WhiteRook
-			state.board[6][7] = WhiteKing
-			state.board[7][7] = EmptySquare
-			state.blackCanCastleShort = false
-			state.blackCanCastleLong = false
-		}
-		state.turn = int8(turn+1) % 2
-		return state
-	} else if special == CastleLong {
-		if turn == White {
-			state.board[0][0] = EmptySquare
-			state.board[1][0] = EmptySquare
-			state.board[2][0] = WhiteKing
-			state.board[3][0] = WhiteRook
-			state.board[4][0] = EmptySquare
-			state.whiteCanCastleShort = false
-			state.whiteCanCastleLong = false
-		} else {
-			state.board[0][7] = EmptySquare
-			state.board[1][7] = EmptySquare
-			state.board[2][7] = BlackKing
-			state.board[3][7] = BlackRook
-			state.board[4][7] = EmptySquare
-			state.blackCanCastleShort = false
-			state.blackCanCastleLong = false
-		}
-		state.turn = int8(turn+1) % 2
-		return state
-	}
-	var movingPieceType int8 = 0
-	if special == NoSpecial || special == EnPeasant {
-		movingPieceType = state.board[i1][j1]
-		if movingPieceType == WhiteKing {
-			state.whiteCanCastleLong = false
-			state.whiteCanCastleShort = false
-		} else if movingPieceType == BlackKing {
-			state.blackCanCastleLong = false
-			state.blackCanCastleShort = false
-		}
-	} else if special == PromoteToQueen {
-		if turn == White {
-			movingPieceType = WhiteQueen
-		} else {
-			movingPieceType = BlackQueen
-		}
-	} else if special == PromoteToRook {
-		if turn == White {
-			movingPieceType = WhiteRook
-		} else {
-			movingPieceType = BlackRook
-		}
-	} else if special == PromoteToBishop {
-		if turn == White {
-			movingPieceType = WhiteBishop
-		} else {
-			movingPieceType = BlackBishop
-		}
-	} else if special == PromoteToKnight {
-		if turn == White {
-			movingPieceType = WhiteKnight
-		} else {
-			movingPieceType = BlackKnight
-		}
+	if state.turn == White {
+		state.turn = Black
+	} else if state.turn == Black {
+		state.turn = White
+	} else {
+		fmt.Println("What is even going on???")
 	}
 
-	if movingPieceType == WhiteRook && i1 == 0 && j1 == 0 {
-		state.whiteCanCastleLong = false
-	} else if movingPieceType == WhiteRook && i1 == 0 && j1 == 7 {
-		state.whiteCanCastleShort = false
-	} else if movingPieceType == BlackRook && i1 == 7 && j1 == 0 {
-		state.blackCanCastleLong = false
-	} else if movingPieceType == BlackRook && i1 == 7 && j1 == 7 {
-		state.blackCanCastleShort = false
-	}
-
-	state.board[i1][j1] = EmptySquare
-	state.board[i2][j2] = movingPieceType
-	if special == EnPeasant {
-		state.board[i2][j1] = EmptySquare
-	}
-	state.turn = int8(turn+1) % 2
 	return state
-}
-
-func (state *ChessState) progressStateBackward(move Move) {
-
 }

@@ -1,16 +1,17 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
-	"github.com/BrianJHenry/go-chess/server/pkg/chesssockets"
+	"github.com/BrianJHenry/go-chess/server/pkg/sockets"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 )
 
 func setupRoutes(app *fiber.App) {
 
-	games := make(map[string]*chesssockets.Game)
+	games := make(map[string]*sockets.Game)
 
 	app.Get("/findGame", func(c *fiber.Ctx) error {
 		// TODO: implement searching for free game
@@ -31,17 +32,17 @@ func setupRoutes(app *fiber.App) {
 
 		if game, ok := games[id]; ok {
 			if len(game.Clients) < game.NumberOfPlayers {
-				client := &chesssockets.Client{
+				client := &sockets.Client{
 					Conn: conn,
 					Game: game,
 				}
 				game.Register <- client
 				client.Read()
 			} else {
-				// Respond with Game full
+				conn.Conn.WriteMessage(1, []byte(fmt.Sprintf("Game with ID: %v is full.", id)))
 			}
 		} else {
-			// Respond with invalid ID
+			conn.Conn.WriteMessage(1, []byte("Invalid game ID."))
 		}
 	}))
 }

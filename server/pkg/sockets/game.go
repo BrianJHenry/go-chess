@@ -2,6 +2,7 @@ package sockets
 
 import (
 	"fmt"
+	"math/rand"
 
 	"github.com/BrianJHenry/go-chess/server/pkg/models"
 )
@@ -57,9 +58,9 @@ func convertToMove(move moveToSend) models.Move {
 
 // setup states to be sent across websockets
 type stateToSend struct {
-	turn          bool
-	board         []int8
-	previousMoves []moveToSend
+	Turn          bool         `json:"turn"`
+	Board         []int8       `json:"board"`
+	PreviousMoves []moveToSend `json:"previousMoves"`
 }
 
 func convertToStateToSend(game models.ChessGame, ownColor int) stateToSend {
@@ -74,16 +75,16 @@ func convertToStateToSend(game models.ChessGame, ownColor int) stateToSend {
 	} else {
 		turn = false
 	}
-	var previousMoves = make([]moveToSend, 0, len(game.Moves))
-	for _, move := range game.Moves {
+	var previousMoves = make([]moveToSend, 0, len(game.MoveHistory))
+	for _, move := range game.MoveHistory {
 		convertedMove := convertToMoveToSend(move)
 		previousMoves = append(previousMoves, convertedMove)
 	}
 
 	return stateToSend{
-		turn:          turn,
-		board:         board,
-		previousMoves: previousMoves,
+		Turn:          turn,
+		Board:         board,
+		PreviousMoves: previousMoves,
 	}
 }
 
@@ -97,7 +98,7 @@ type Game struct {
 	// websocket handling
 	Register    chan *Client
 	Unregister  chan *Client
-	RecieveMove chan Message
+	RecieveMove chan moveToSend
 }
 
 func NewGame(numberOfPlayers int) *Game {
@@ -106,14 +107,11 @@ func NewGame(numberOfPlayers int) *Game {
 		Clients:         make([]*Client, numberOfPlayers),
 		Register:        make(chan *Client),
 		Unregister:      make(chan *Client),
-		RecieveMove:     make(chan Message),
+		RecieveMove:     make(chan moveToSend),
 	}
 }
 
 func (game *Game) Start() {
-
-	// current number of clients to check if we have enough to start our game
-	currentClientCount := 0
 
 	// create new game
 	chessGame := models.NewChessGame()
@@ -122,15 +120,18 @@ func (game *Game) Start() {
 	for !gameOver {
 		select {
 		case client := <-game.Register:
-			game.Clients[currentClientCount] = client
-			currentClientCount += 1
+			game.Clients = append(game.Clients, client)
 			fmt.Println("Number of players in lobby: ", len(game.Clients))
 			// if we have enough players start the game
-			if currentClientCount == game.NumberOfPlayers {
+			if len(game.Clients) == game.NumberOfPlayers {
 				for i, c := range game.Clients {
 					fmt.Println(i, c)
 					startingState := convertToStateToSend(chessGame, i)
 					client.Conn.WriteJSON(startingState)
+					if i == 0 {
+						// send over possible moves to white
+						client.Conn.WriteJSON(chessGame.PossibleMoves)
+					}
 				}
 			}
 		case client := <-game.Unregister:
@@ -150,31 +151,84 @@ func (game *Game) Start() {
 			}
 			gameOver = true
 		case move := <-game.RecieveMove:
-			// TODO: check that move was in possible moves
+			// check that move was in possible moves
+			tryMove := convertToMove(move)
+			isAllowedMove := false
+			for _, possibleMove := range chessGame.PossibleMoves {
+				if tryMove == possibleMove {
+					isAllowedMove = true
+					break
+				}
+			}
+			if !isAllowedMove {
+				game.Clients[chessGame.CurrentState.Turn].Conn.WriteMessage(1, []byte("Invalid Move Attempted."))
+				break
+			}
 
-			// TODO: execute move
+			// execute move
+			chessGame.ExecuteMoveOnGame(tryMove)
 
-			// TODO: send back updated state to all players
+			// send back updated state
+			for i, client := range game.Clients {
+				client.Conn.WriteJSON(convertToStateToSend(chessGame, i))
+			}
 
-			for _, client := range game.Clients {
-				client.Conn.WriteMessage(move.Type, []byte(move.Body))
+			// check if game is ended
+
+			// TODO: Refactor logic
+			if chessGame.Winner == models.Stalemate {
+				for _, client := range game.Clients {
+					client.Conn.WriteMessage(1, []byte("Stalemate"))
+				}
+				gameOver = true
+				break
+			} else if chessGame.Winner == models.WhiteWins {
+				for _, client := range game.Clients {
+					client.Conn.WriteMessage(1, []byte("White Wins!"))
+				}
+				gameOver = true
+				break
+			} else if chessGame.Winner == models.BlackWins {
+				for _, client := range game.Clients {
+					client.Conn.WriteMessage(1, []byte("Black Wins!"))
+				}
+				gameOver = true
+				break
+			}
+
+			// game continues... (pass move to player or execute computer move)
+			if game.NumberOfPlayers == 1 {
+				// execute random move
+				chessGame.ExecuteMoveOnGame(chessGame.PossibleMoves[rand.Intn(len(chessGame.PossibleMoves))])
+
+				// send back updated state
+				for i, client := range game.Clients {
+					client.Conn.WriteJSON(convertToStateToSend(chessGame, i))
+				}
+
+				// check if game is ended
+
+				// TODO: Refactor logic
+				if chessGame.Winner == models.Stalemate {
+					for _, client := range game.Clients {
+						client.Conn.WriteMessage(1, []byte("Stalemate"))
+					}
+					gameOver = true
+					break
+				} else if chessGame.Winner == models.WhiteWins {
+					for _, client := range game.Clients {
+						client.Conn.WriteMessage(1, []byte("White Wins!"))
+					}
+					gameOver = true
+					break
+				} else if chessGame.Winner == models.BlackWins {
+					for _, client := range game.Clients {
+						client.Conn.WriteMessage(1, []byte("Black Wins!"))
+					}
+					gameOver = true
+					break
+				}
 			}
 		}
-
-		// TODO: check if the previous move ended the game
-
-		// TODO: if so, set gameOver = true
-		// TODO: if so, send end game message to players
-
-		// TODO: check if the computer needs to make a move
-
-		// TODO: enumerate moves and make move for computer
-		// TODO: check if that ends game
-		// TODO: if so send endd game message to players
-
-		// TODO: if the computer doesn't need to make a move
-
-		// TODO: then enumerate moves for the color whose turn it is
-		// TODO: send possible moves to appropriate client
 	}
 }

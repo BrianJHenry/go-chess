@@ -20,9 +20,9 @@ var moveTypesMap map[string]int = map[string]int{
 }
 
 type moveToSend struct {
-	moveType  string `json:"moveType"`
-	oldSquare int    `json:"oldSquare"`
-	newSquare int    `json:"newSquare"`
+	MoveType  string `json:"moveType"`
+	OldSquare int    `json:"oldSquare"`
+	NewSquare int    `json:"newSquare"`
 }
 
 func convertToMoveToSend(move models.Move) moveToSend {
@@ -31,21 +31,21 @@ func convertToMoveToSend(move models.Move) moveToSend {
 	newSquare := move.NewSquare.Row*8 + move.NewSquare.Col
 
 	return moveToSend{
-		moveType:  moveType,
-		oldSquare: oldSquare,
-		newSquare: newSquare,
+		MoveType:  moveType,
+		OldSquare: oldSquare,
+		NewSquare: newSquare,
 	}
 }
 
 func convertToMove(move moveToSend) models.Move {
-	moveType := moveTypesMap[move.moveType]
+	moveType := moveTypesMap[move.MoveType]
 	oldSquare := models.Location{
-		Row: move.oldSquare / 8,
-		Col: move.oldSquare % 8,
+		Row: move.OldSquare / 8,
+		Col: move.OldSquare % 8,
 	}
 	newSquare := models.Location{
-		Row: move.newSquare / 8,
-		Col: move.newSquare % 8,
+		Row: move.NewSquare / 8,
+		Col: move.NewSquare % 8,
 	}
 
 	return models.Move{

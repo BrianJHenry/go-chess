@@ -5,8 +5,8 @@ type ChessGame struct {
 	Moves        []Move
 }
 
-func NewChessGame() *ChessGame {
-	return &ChessGame{
+func NewChessGame() ChessGame {
+	return ChessGame{
 		CurrentState: NewChessState(),
 		Moves:        make([]Move, 0, 64),
 	}

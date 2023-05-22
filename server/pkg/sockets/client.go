@@ -1,7 +1,6 @@
 package sockets
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/gofiber/websocket/v2"
@@ -23,19 +22,14 @@ func (c *Client) Read() {
 		c.Game.Unregister <- c
 	}()
 
-	var (
-		messageType int
-		message     []byte
-		err         error
-	)
+	var err error
+	var move = &moveToSend{}
 	for {
-		messageType, message, err = c.Conn.ReadMessage()
+		err = c.Conn.ReadJSON(move)
 		if err != nil {
 			log.Println(err)
 			return
 		}
-		move := Message{Type: messageType, Body: string(message)}
-		c.Game.RecieveMove <- move
-		fmt.Printf("Message Recieved: %+v", move)
+		c.Game.RecieveMove <- *move
 	}
 }

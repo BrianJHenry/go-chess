@@ -90,6 +90,9 @@ func convertToStateToSend(game models.ChessGame, ownColor int) stateToSend {
 
 // actual game logic
 type Game struct {
+	GameID string
+	Delete func(id string)
+
 	// game info
 	NumberOfPlayers int
 
@@ -101,8 +104,10 @@ type Game struct {
 	RecieveMove chan moveToSend
 }
 
-func NewGame(numberOfPlayers int) *Game {
+func NewGame(numberOfPlayers int, gameID string, delete func(id string)) *Game {
 	return &Game{
+		GameID:          gameID,
+		Delete:          delete,
 		NumberOfPlayers: numberOfPlayers,
 		Clients:         make([]*Client, numberOfPlayers),
 		Register:        make(chan *Client),
@@ -112,6 +117,9 @@ func NewGame(numberOfPlayers int) *Game {
 }
 
 func (game *Game) Start() {
+	defer func() {
+		game.Delete(game.GameID)
+	}()
 
 	// create new game
 	chessGame := models.NewChessGame()

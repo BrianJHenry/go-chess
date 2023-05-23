@@ -3,20 +3,45 @@ package main
 import (
 	"fmt"
 	"log"
+	"math/rand"
+	"strconv"
 
 	"github.com/BrianJHenry/go-chess/server/pkg/sockets"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
 )
 
+var games = make(map[string]*sockets.Game)
+
+func UnregisterGame(gameID string) {
+	delete(games, gameID)
+}
+
 func setupRoutes(app *fiber.App) {
 
-	games := make(map[string]*sockets.Game)
-
-	app.Get("/findGame", func(c *fiber.Ctx) error {
-		// TODO: implement searching for free game
-		// TODO: if no game found, implement adding game to games and starting it
-		return nil
+	app.Get("/findGame/:numPlayers", func(c *fiber.Ctx) error {
+		numberOfPlayers, err := strconv.Atoi(c.Params("numPlayers"))
+		if err != nil {
+			log.Println("Invalid Find Game Request")
+			return c.Status(404).SendString(err.Error())
+		}
+		if numberOfPlayers == 2 {
+			for key, element := range games {
+				if element.NumberOfPlayers == 2 && len(element.Clients) < 2 {
+					return c.SendString(key)
+				}
+			}
+		}
+		var randomKey string = fmt.Sprint(rand.Intn(10000000))
+		for _, ok := games[randomKey]; ok; {
+			randomKey = fmt.Sprint(rand.Intn(10000000))
+		}
+		newGame := sockets.NewGame(numberOfPlayers, randomKey, func(gameID string) {
+			delete(games, gameID)
+			log.Println("Deleting game")
+		})
+		games[randomKey] = newGame
+		return c.SendString(randomKey)
 	})
 
 	app.Use("/game", func(c *fiber.Ctx) error {

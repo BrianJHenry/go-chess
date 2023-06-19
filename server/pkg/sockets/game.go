@@ -7,7 +7,7 @@ import (
 	"github.com/BrianJHenry/go-chess/server/pkg/models"
 )
 
-// setup move information to be sent across websockets
+// setup mappings for move types
 var moveTypesArray [8]string = [8]string{"N", "S", "L", "P", "Q", "R", "B", "K"}
 var moveTypesMap map[string]int = map[string]int{
 	"N": 0,
@@ -20,25 +20,26 @@ var moveTypesMap map[string]int = map[string]int{
 	"K": 7,
 }
 
-type moveToSend struct {
+// setup moves to be sent across websockets
+type APIMove struct {
 	MoveType  string `json:"moveType"`
 	OldSquare int    `json:"oldSquare"`
 	NewSquare int    `json:"newSquare"`
 }
 
-func convertToMoveToSend(move models.Move) moveToSend {
+func convertToAPIMove(move models.Move) APIMove {
 	moveType := moveTypesArray[move.Type]
 	oldSquare := move.OldSquare.Row*8 + move.OldSquare.Col
 	newSquare := move.NewSquare.Row*8 + move.NewSquare.Col
 
-	return moveToSend{
+	return APIMove{
 		MoveType:  moveType,
 		OldSquare: oldSquare,
 		NewSquare: newSquare,
 	}
 }
 
-func convertToMove(move moveToSend) models.Move {
+func convertToMove(move APIMove) models.Move {
 	moveType := moveTypesMap[move.MoveType]
 	oldSquare := models.Location{
 		Row: move.OldSquare / 8,
@@ -57,34 +58,41 @@ func convertToMove(move moveToSend) models.Move {
 }
 
 // setup states to be sent across websockets
-type stateToSend struct {
-	Turn          bool         `json:"turn"`
-	Board         []int8       `json:"board"`
-	PreviousMoves []moveToSend `json:"previousMoves"`
+type APIState struct {
+	Turn          bool      `json:"turn"`
+	Board         []int8    `json:"board"`
+	PreviousMoves []APIMove `json:"previousMoves"`
+	PossibleMoves []APIMove `json:"possibleMoves"`
 }
 
-func convertToStateToSend(game models.ChessGame, ownColor int) stateToSend {
+func convertToAPIState(game models.ChessGame, ownColor int) APIState {
 	var board = make([]int8, 0, 64)
 	for _, row := range game.CurrentState.Board {
 		sliceRow := row[:]
 		board = append(board, sliceRow...)
 	}
 	var turn bool
+	var possibleMoves []APIMove
 	if ownColor == int(game.CurrentState.Turn) {
 		turn = true
+		for _, move := range game.PossibleMoves {
+			possibleMoves = append(possibleMoves, convertToAPIMove(move))
+		}
 	} else {
 		turn = false
+		possibleMoves = make([]APIMove, 0)
 	}
-	var previousMoves = make([]moveToSend, 0, len(game.MoveHistory))
+	var previousMoves = make([]APIMove, 0, len(game.MoveHistory))
 	for _, move := range game.MoveHistory {
-		convertedMove := convertToMoveToSend(move)
+		convertedMove := convertToAPIMove(move)
 		previousMoves = append(previousMoves, convertedMove)
 	}
 
-	return stateToSend{
+	return APIState{
 		Turn:          turn,
 		Board:         board,
 		PreviousMoves: previousMoves,
+		PossibleMoves: possibleMoves,
 	}
 }
 
@@ -101,7 +109,7 @@ type Game struct {
 	// websocket handling
 	Register    chan *Client
 	Unregister  chan *Client
-	RecieveMove chan moveToSend
+	RecieveMove chan APIMove
 }
 
 func NewGame(numberOfPlayers int, gameID string, delete func(id string)) *Game {
@@ -109,10 +117,10 @@ func NewGame(numberOfPlayers int, gameID string, delete func(id string)) *Game {
 		GameID:          gameID,
 		Delete:          delete,
 		NumberOfPlayers: numberOfPlayers,
-		Clients:         make([]*Client, numberOfPlayers),
+		Clients:         make([]*Client, 0, numberOfPlayers),
 		Register:        make(chan *Client),
 		Unregister:      make(chan *Client),
-		RecieveMove:     make(chan moveToSend),
+		RecieveMove:     make(chan APIMove),
 	}
 }
 
@@ -125,21 +133,21 @@ func (game *Game) Start() {
 	chessGame := models.NewChessGame()
 	gameOver := false
 
+	var message Message
+
 	for !gameOver {
 		select {
 		case client := <-game.Register:
 			game.Clients = append(game.Clients, client)
-			fmt.Println("Number of players in lobby: ", len(game.Clients))
 			// if we have enough players start the game
 			if len(game.Clients) == game.NumberOfPlayers {
 				for i, c := range game.Clients {
 					fmt.Println(i, c)
-					startingState := convertToStateToSend(chessGame, i)
-					client.Conn.WriteJSON(startingState)
-					if i == 0 {
-						// send over possible moves to white
-						client.Conn.WriteJSON(chessGame.PossibleMoves)
-					}
+
+					// send message
+					message = NewMessage(UpdateStateMessage, "", convertToAPIState(chessGame, i))
+					// TODO: Error checking
+					c.Conn.WriteJSON(message)
 				}
 			}
 		case client := <-game.Unregister:
@@ -154,7 +162,15 @@ func (game *Game) Start() {
 					} else {
 						winner = "Black"
 					}
-					client.Conn.WriteMessage(1, []byte(fmt.Sprintf("Opponent Disconnected. %s wins!", winner)))
+
+					// send message
+					message = NewMessage(MiscMessage, "Opponent Disconnected", APIState{})
+					// TODO: Error checking
+					c.Conn.WriteJSON(message)
+
+					message = NewMessage(GameInfoMessage, fmt.Sprintf("%s wins!", winner), APIState{})
+					// TODO: Error checking
+					c.Conn.WriteJSON(message)
 				}
 			}
 			gameOver = true
@@ -169,7 +185,11 @@ func (game *Game) Start() {
 				}
 			}
 			if !isAllowedMove {
-				game.Clients[chessGame.CurrentState.Turn].Conn.WriteMessage(1, []byte("Invalid Move Attempted."))
+				message = NewMessage(MiscMessage, "Invalid Move.", APIState{})
+				// TODO: Error checking
+				for _, client := range game.Clients {
+					client.Conn.WriteJSON(message)
+				}
 				break
 			}
 
@@ -178,7 +198,10 @@ func (game *Game) Start() {
 
 			// send back updated state
 			for i, client := range game.Clients {
-				client.Conn.WriteJSON(convertToStateToSend(chessGame, i))
+
+				// send updated state
+				message = NewMessage(UpdateStateMessage, "", convertToAPIState(chessGame, i))
+				client.Conn.WriteJSON(message)
 			}
 
 			// check if game is ended
@@ -186,19 +209,25 @@ func (game *Game) Start() {
 			// TODO: Refactor logic
 			if chessGame.Winner == models.Stalemate {
 				for _, client := range game.Clients {
-					client.Conn.WriteMessage(1, []byte("Stalemate"))
+					// send message
+					message = NewMessage(GameInfoMessage, "Stalemate", APIState{})
+					client.Conn.WriteJSON(message)
 				}
 				gameOver = true
 				break
 			} else if chessGame.Winner == models.WhiteWins {
 				for _, client := range game.Clients {
-					client.Conn.WriteMessage(1, []byte("White Wins!"))
+					// send message
+					message = NewMessage(GameInfoMessage, "White wins!", APIState{})
+					client.Conn.WriteJSON(message)
 				}
 				gameOver = true
 				break
 			} else if chessGame.Winner == models.BlackWins {
 				for _, client := range game.Clients {
-					client.Conn.WriteMessage(1, []byte("Black Wins!"))
+					// send message
+					message = NewMessage(GameInfoMessage, "Black wins!", APIState{})
+					client.Conn.WriteJSON(message)
 				}
 				gameOver = true
 				break
@@ -211,7 +240,9 @@ func (game *Game) Start() {
 
 				// send back updated state
 				for i, client := range game.Clients {
-					client.Conn.WriteJSON(convertToStateToSend(chessGame, i))
+					// send message
+					message = NewMessage(UpdateStateMessage, "", convertToAPIState(chessGame, i))
+					client.Conn.WriteJSON(message)
 				}
 
 				// check if game is ended
@@ -219,19 +250,25 @@ func (game *Game) Start() {
 				// TODO: Refactor logic
 				if chessGame.Winner == models.Stalemate {
 					for _, client := range game.Clients {
-						client.Conn.WriteMessage(1, []byte("Stalemate"))
+						// send message
+						message = NewMessage(GameInfoMessage, "Stalemate", APIState{})
+						client.Conn.WriteJSON(message)
 					}
 					gameOver = true
 					break
 				} else if chessGame.Winner == models.WhiteWins {
 					for _, client := range game.Clients {
-						client.Conn.WriteMessage(1, []byte("White Wins!"))
+						// send message
+						message = NewMessage(GameInfoMessage, "White wins!", APIState{})
+						client.Conn.WriteJSON(message)
 					}
 					gameOver = true
 					break
 				} else if chessGame.Winner == models.BlackWins {
 					for _, client := range game.Clients {
-						client.Conn.WriteMessage(1, []byte("Black Wins!"))
+						// send message
+						message = NewMessage(GameInfoMessage, "Black wins!", APIState{})
+						client.Conn.WriteJSON(message)
 					}
 					gameOver = true
 					break

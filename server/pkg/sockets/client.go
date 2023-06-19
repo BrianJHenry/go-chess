@@ -3,17 +3,12 @@ package sockets
 import (
 	"log"
 
-	"github.com/gofiber/websocket/v2"
+	"github.com/gofiber/contrib/websocket"
 )
 
 type Client struct {
 	Conn *websocket.Conn
 	Game *Game
-}
-
-type Message struct {
-	Type int
-	Body string
 }
 
 func (c *Client) Read() {
@@ -23,7 +18,8 @@ func (c *Client) Read() {
 	}()
 
 	var err error
-	var move = &moveToSend{}
+	var move = &APIMove{}
+	log.Println("Begin read")
 	for {
 		err = c.Conn.ReadJSON(move)
 		if err != nil {

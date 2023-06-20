@@ -96,6 +96,16 @@ func convertToAPIState(game models.ChessGame, ownColor int) APIState {
 	}
 }
 
+// empty game state
+func CreateEmptyGameState() APIState {
+	return APIState{
+		Turn:          false,
+		Board:         []int8{},
+		PreviousMoves: []APIMove{},
+		PossibleMoves: []APIMove{},
+	}
+}
+
 // actual game logic
 type Game struct {
 	GameID string
@@ -164,11 +174,11 @@ func (game *Game) Start() {
 					}
 
 					// send message
-					message = NewMessage(MiscMessage, "Opponent Disconnected", APIState{})
+					message = NewMessage(MiscMessage, "Opponent Disconnected", CreateEmptyGameState())
 					// TODO: Error checking
 					c.Conn.WriteJSON(message)
 
-					message = NewMessage(GameInfoMessage, fmt.Sprintf("%s wins!", winner), APIState{})
+					message = NewMessage(GameInfoMessage, fmt.Sprintf("%s wins!", winner), CreateEmptyGameState())
 					// TODO: Error checking
 					c.Conn.WriteJSON(message)
 				}
@@ -185,7 +195,7 @@ func (game *Game) Start() {
 				}
 			}
 			if !isAllowedMove {
-				message = NewMessage(MiscMessage, "Invalid Move.", APIState{})
+				message = NewMessage(MiscMessage, "Invalid Move.", CreateEmptyGameState())
 				// TODO: Error checking
 				for _, client := range game.Clients {
 					client.Conn.WriteJSON(message)
@@ -210,7 +220,7 @@ func (game *Game) Start() {
 			if chessGame.Winner == models.Stalemate {
 				for _, client := range game.Clients {
 					// send message
-					message = NewMessage(GameInfoMessage, "Stalemate", APIState{})
+					message = NewMessage(GameInfoMessage, "Stalemate", CreateEmptyGameState())
 					client.Conn.WriteJSON(message)
 				}
 				gameOver = true
@@ -218,7 +228,7 @@ func (game *Game) Start() {
 			} else if chessGame.Winner == models.WhiteWins {
 				for _, client := range game.Clients {
 					// send message
-					message = NewMessage(GameInfoMessage, "White wins!", APIState{})
+					message = NewMessage(GameInfoMessage, "White wins!", CreateEmptyGameState())
 					client.Conn.WriteJSON(message)
 				}
 				gameOver = true
@@ -226,7 +236,7 @@ func (game *Game) Start() {
 			} else if chessGame.Winner == models.BlackWins {
 				for _, client := range game.Clients {
 					// send message
-					message = NewMessage(GameInfoMessage, "Black wins!", APIState{})
+					message = NewMessage(GameInfoMessage, "Black wins!", CreateEmptyGameState())
 					client.Conn.WriteJSON(message)
 				}
 				gameOver = true
@@ -251,7 +261,7 @@ func (game *Game) Start() {
 				if chessGame.Winner == models.Stalemate {
 					for _, client := range game.Clients {
 						// send message
-						message = NewMessage(GameInfoMessage, "Stalemate", APIState{})
+						message = NewMessage(GameInfoMessage, "Stalemate", CreateEmptyGameState())
 						client.Conn.WriteJSON(message)
 					}
 					gameOver = true
@@ -259,7 +269,7 @@ func (game *Game) Start() {
 				} else if chessGame.Winner == models.WhiteWins {
 					for _, client := range game.Clients {
 						// send message
-						message = NewMessage(GameInfoMessage, "White wins!", APIState{})
+						message = NewMessage(GameInfoMessage, "White wins!", CreateEmptyGameState())
 						client.Conn.WriteJSON(message)
 					}
 					gameOver = true
@@ -267,7 +277,7 @@ func (game *Game) Start() {
 				} else if chessGame.Winner == models.BlackWins {
 					for _, client := range game.Clients {
 						// send message
-						message = NewMessage(GameInfoMessage, "Black wins!", APIState{})
+						message = NewMessage(GameInfoMessage, "Black wins!", CreateEmptyGameState())
 						client.Conn.WriteJSON(message)
 					}
 					gameOver = true

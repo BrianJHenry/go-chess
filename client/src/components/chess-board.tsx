@@ -14,8 +14,14 @@ import {ReactComponent as WhiteRook} from "../assets/white-pieces/WhiteRook.svg"
 import {ReactComponent as WhiteBishop} from "../assets/white-pieces/WhiteBishop.svg"
 import {ReactComponent as WhiteKnight} from "../assets/white-pieces/WhiteKnight.svg"
 import {ReactComponent as WhitePawn} from "../assets/white-pieces/WhitePawn.svg"
+import { ChessMove, ChessState } from "../classes/chess-data";
 
-const ChessBoard = () => {
+export type ChessBoardProps = {
+    boardState: ChessState;
+    moveHandler: (move: ChessMove) => void;
+}
+
+const ChessBoard = ({boardState, moveHandler}: ChessBoardProps) => {
 
     const pieces: any = [
         <BlackKing />,
@@ -33,24 +39,13 @@ const ChessBoard = () => {
         <WhiteKing />,
     ];   
 
-    const [boardState, setBoardState] = useState([
-        -4, -2, -3, -5, -6, -3, -2, -4,
-        -1, -1, -1, -1, -1, -1, -1, -1,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        1, 1, 1, 1, 1, 1, 1, 1,
-        4, 2, 3, 5, 6, 3, 2, 4,
-    ]);
-    
     const [activeIndex, setActiveIndex] = useState(-1);
 
     const handleClick = (index: number) => {
         // case where no active square
         if (activeIndex === -1) {
             // check if the clicked square has a piece
-            if (boardState[index] !== 0) {
+            if (boardState.board[index] !== 0) {
                 setActiveIndex(index);
                 return;
             } else {
@@ -63,21 +58,29 @@ const ChessBoard = () => {
             return;
         }
         // case where you click a new square
-        const newBoardState = [...boardState];
-        newBoardState[index] = newBoardState[activeIndex];
-        newBoardState[activeIndex] = 0;
-        setBoardState(newBoardState);
+        console.log("Tried to make move:", activeIndex, " : ", index);
+        // make new move
+        if (boardState.turn) {
+            for (var move of boardState.possibleMoves) {
+                console.log("Possible Move:", move.oldSquare, " : ", move.newSquare)
+                if (move.oldSquare == activeIndex && move.newSquare == index) {
+                    moveHandler(move);
+                    break;
+                }
+            }
+        }
+
         setActiveIndex(-1);
         return;
     };
 
-
     return (
         <div className="chess-board">
-            {boardState.map((squareState, index) => {
+            {boardState.board.map((squareState, index) => {
                 const color: string = ((index % 2 + Math.floor(index / 8)) % 2 == 1) ? "#B7C0D8" : "#E8EDF9";
                 return (
                     <ChessSquare 
+                        key={index}
                         color={color} 
                         isActive={activeIndex === index}
                         clickHandler={() => {handleClick(index)}}>

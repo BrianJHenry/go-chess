@@ -2,6 +2,7 @@ package sockets
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 
 	"github.com/BrianJHenry/go-chess/server/pkg/models"
@@ -73,6 +74,7 @@ func convertToAPIState(game models.ChessGame, ownColor int) APIState {
 	}
 	var turn bool
 	var possibleMoves []APIMove
+	log.Printf("Own: %v : Current Turn: %v", ownColor, game.CurrentState.Turn)
 	if ownColor == int(game.CurrentState.Turn) {
 		turn = true
 		for _, move := range game.PossibleMoves {
@@ -99,10 +101,22 @@ func convertToAPIState(game models.ChessGame, ownColor int) APIState {
 // empty game state
 func CreateEmptyGameState() APIState {
 	return APIState{
-		Turn:          false,
-		Board:         []int8{},
-		PreviousMoves: []APIMove{},
-		PossibleMoves: []APIMove{},
+		Turn:  false,
+		Board: []int8{-99},
+		PreviousMoves: []APIMove{
+			{
+				MoveType:  "",
+				NewSquare: -99,
+				OldSquare: -99,
+			},
+		},
+		PossibleMoves: []APIMove{
+			{
+				MoveType:  "",
+				NewSquare: -99,
+				OldSquare: -99,
+			},
+		},
 	}
 }
 
@@ -148,14 +162,14 @@ func (game *Game) Start() {
 	for !gameOver {
 		select {
 		case client := <-game.Register:
+			log.Println("Doing register work...")
 			game.Clients = append(game.Clients, client)
 			// if we have enough players start the game
 			if len(game.Clients) == game.NumberOfPlayers {
 				for i, c := range game.Clients {
-					fmt.Println(i, c)
-
 					// send message
 					message = NewMessage(UpdateStateMessage, "", convertToAPIState(chessGame, i))
+					log.Println(message)
 					// TODO: Error checking
 					c.Conn.WriteJSON(message)
 				}
@@ -185,6 +199,7 @@ func (game *Game) Start() {
 			}
 			gameOver = true
 		case move := <-game.RecieveMove:
+
 			// check that move was in possible moves
 			tryMove := convertToMove(move)
 			isAllowedMove := false
@@ -208,7 +223,7 @@ func (game *Game) Start() {
 
 			// send back updated state
 			for i, client := range game.Clients {
-
+				log.Println("Move recieved.")
 				// send updated state
 				message = NewMessage(UpdateStateMessage, "", convertToAPIState(chessGame, i))
 				client.Conn.WriteJSON(message)

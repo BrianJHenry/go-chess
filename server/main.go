@@ -47,6 +47,7 @@ func setupRoutes(app *fiber.App) {
 		})
 		log.Println("Creating new game.")
 		games[randomKey] = newGame
+		go newGame.Start()
 		return c.SendString(randomKey)
 	})
 
@@ -61,15 +62,15 @@ func setupRoutes(app *fiber.App) {
 	app.Get("/game/:id", websocket.New(func(conn *websocket.Conn) {
 		id := conn.Params("id")
 		log.Println("Requested websocket with ID: ", id)
-		log.Println(games)
 
 		if game, ok := games[id]; ok {
-			log.Println("Number of clients in game: ", len(game.Clients))
+			log.Println("Number of clients currently in game: ", len(game.Clients))
 			if len(game.Clients) < game.NumberOfPlayers {
 				client := &sockets.Client{
 					Conn: conn,
 					Game: game,
 				}
+				log.Print("About to register...")
 				game.Register <- client
 				log.Println("Registering client and starting read.")
 				client.Read()

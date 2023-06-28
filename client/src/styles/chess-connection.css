@@ -1,0 +1,10 @@
+.chess-connection-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+}
+.chess-connection-info-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}

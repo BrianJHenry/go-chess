@@ -1,6 +1,6 @@
 import "../styles/play-computer.css"
 import { useEffect, useState } from "react";
-import ChessGame from "../components/chess-game";
+import ChessConnection from "../components/chess-connection";
 
 const findGameEndpoint = "http://localhost:3000/findGame/1"
 
@@ -24,7 +24,7 @@ const PlayComputer = () => {
     return (
         <div className="play-computer-container">
             <h1>GameID: {gameID}</h1>
-            {gameID !== "..." && <ChessGame gameID={gameID}/>}
+            {gameID !== "..." && <ChessConnection gameID={gameID}/>}
         </div>
     );
 };

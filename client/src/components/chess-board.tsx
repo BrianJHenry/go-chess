@@ -17,11 +17,12 @@ import {ReactComponent as WhitePawn} from "../assets/white-pieces/WhitePawn.svg"
 import { ChessMove, ChessState } from "../classes/chess-data";
 
 export type ChessBoardProps = {
+    sideColor: number;
     boardState: ChessState;
     moveHandler: (move: ChessMove) => void;
 }
 
-const ChessBoard = ({boardState, moveHandler}: ChessBoardProps) => {
+const ChessBoard = ({sideColor, boardState, moveHandler}: ChessBoardProps) => {
 
     const pieces: any = [
         <BlackKing />,
@@ -74,17 +75,20 @@ const ChessBoard = ({boardState, moveHandler}: ChessBoardProps) => {
         return;
     };
 
+    const displayReversed = sideColor == 0;
+
     return (
         <div className="chess-board">
-            {boardState.board.map((squareState, index) => {
-                const color: string = ((index % 2 + Math.floor(index / 8)) % 2 == 1) ? "#B7C0D8" : "#E8EDF9";
+            {boardState.board.map((_, index, board) => {
+                const currIndex = displayReversed ? 64 - 1 - index : index;
+                const color: string = ((currIndex % 2 + Math.floor(currIndex / 8)) % 2 == 1) ? "#B7C0D8" : "#E8EDF9";
                 return (
                     <ChessSquare 
                         key={index}
                         color={color} 
-                        isActive={activeIndex === index}
-                        clickHandler={() => {handleClick(index)}}>
-                        {pieces[squareState+6]}
+                        isActive={activeIndex === currIndex}
+                        clickHandler={() => {handleClick(currIndex)}}>
+                        {pieces[board[currIndex]+6]}
                     </ChessSquare>
                 )
             })}

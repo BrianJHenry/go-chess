@@ -1,3 +1,16 @@
+export type ChessInfo = {
+    gameID: string;
+    connectionStatus: string;
+    statusMessage: string;
+    turn: boolean;
+    gameEnd: string;
+};
+
+export type MoveSearch = {
+    messageType: number;
+    index: number;
+}
+
 export type ChessMove = {
     moveType: string;
     oldSquare: number;

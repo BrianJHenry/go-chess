@@ -23,7 +23,6 @@ const PlayComputer = () => {
 
     return (
         <div className="play-computer-container">
-            <h1>GameID: {gameID}</h1>
             {gameID !== "..." && <ChessConnection gameID={gameID}/>}
         </div>
     );

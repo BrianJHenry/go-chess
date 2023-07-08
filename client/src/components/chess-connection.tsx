@@ -1,7 +1,7 @@
 import useWebSocket, { ReadyState } from "react-use-websocket";
 import "../styles/chess-connection.css"
 import { useCallback, useEffect, useState } from "react";
-import { ChessMessage, ChessMove, ChessState, DefaultChessState } from "../classes/chess-data";
+import { ChessInfo, ChessMessage, ChessMove, ChessState, DefaultChessState, MoveSearch } from "../classes/chess-data";
 import ChessGame from "./chess-game";
 
 type ChessConnectionProps = {
@@ -17,8 +17,15 @@ const ChessConnection = ({ gameID }: ChessConnectionProps) => {
     const url = "ws://localhost:3000/game/" + gameID;
     const { sendJsonMessage, lastJsonMessage, readyState } = useWebSocket<ChessMessage>(url);
 
-    // TODO: actual implementation
     const handleSendMove = useCallback((move: ChessMove) => sendJsonMessage(move), []);
+    const handleSearchMove = useCallback((index: number) => {
+        console.log("Searching for move.");
+        const msg: MoveSearch = {
+            messageType: 0,
+            index: index,
+        };
+        sendJsonMessage(msg);
+    }, [])
 
     // TODO: actual implementation
     useEffect(() => {
@@ -46,16 +53,17 @@ const ChessConnection = ({ gameID }: ChessConnectionProps) => {
         [ReadyState.UNINSTANTIATED]: "Uninstantiated",
     }[readyState];
 
+    const gameInfo: ChessInfo = {
+        gameID: gameID,
+        connectionStatus: connectionStatus,
+        statusMessage: statusMessage,
+        turn: gameState.turn,
+        gameEnd: gameEnd,
+    };
+
     return (
         <div className="chess-connection-container">
-            <div className="chess-connection-info-container">
-                <p>Game ID: {gameID}</p>
-                <p>Connection Status: {connectionStatus}</p>
-                <p>Last Status Message: {statusMessage}</p>
-                <p>Turn: {gameState.turn}</p>
-                <p>Game Info Message: {gameEnd}</p>
-            </div>
-            <ChessGame gameState={gameState} moveHandler={handleSendMove}/>
+            <ChessGame gameState={gameState} moveHandler={handleSendMove} gameInfo={gameInfo} moveClickHandler={handleSearchMove}/>
         </div>
     );
 };
